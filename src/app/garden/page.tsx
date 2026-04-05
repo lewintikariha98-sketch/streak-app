@@ -100,7 +100,7 @@ export default function GardenPage() {
             </div>
           </div>
         ) : (
-          <div className="absolute bottom-8 left-0 right-0 flex items-end justify-center gap-2 sm:gap-4 px-4 overflow-x-auto">
+          <div className="absolute bottom-8 left-0 right-0 flex items-end justify-start sm:justify-center gap-3 sm:gap-4 px-4 overflow-x-auto scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
             {activeHabits.map((habit, i) => {
               const stats = getHabitStats(habit);
               const stage = getFlowerStage(stats.currentStreak);
@@ -137,7 +137,7 @@ export default function GardenPage() {
       </div>
 
       {/* Stats + XP panel */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6 bg-white border-t border-gray-100">
+      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto lg:mx-0">
           {/* Level bar */}
           <div className="flex items-center gap-4 mb-6">

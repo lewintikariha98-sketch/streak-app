@@ -31,8 +31,8 @@ function StatCard({
   trend?: string; trendUp?: boolean; accentColor: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white rounded-2xl p-4 sm:p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${accentColor}18` }}>
           <span style={{ color: accentColor }}>{icon}</span>
         </div>
@@ -46,7 +46,7 @@ function StatCard({
           </span>
         )}
       </div>
-      <p className="text-[30px] font-black text-slate-900 tracking-tight leading-none">{value}</p>
+      <p className="text-[24px] sm:text-[30px] font-black text-slate-900 tracking-tight leading-none">{value}</p>
       <p className="text-[11px] font-semibold text-slate-500 mt-1.5 uppercase tracking-wide">{label}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
@@ -68,41 +68,45 @@ function AddExpenseRow({ onAdd }: { onAdd: (e: Omit<Expense, 'id' | 'createdAt'>
   };
 
   return (
-    <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderTop: '1px solid #f1f5f9' }}>
-      <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-3 py-2 flex-shrink-0">
-        <span className="text-sm">₹</span>
-        <input
-          type="number"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder="0.00"
-          className="w-16 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder-slate-300"
-        />
+    <div className="px-4 sm:px-5 py-3.5 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2" style={{ borderTop: '1px solid #f1f5f9' }}>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-3 py-2.5 flex-shrink-0">
+          <span className="text-sm">₹</span>
+          <input
+            type="number"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            placeholder="0.00"
+            className="w-20 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder-slate-300"
+          />
+        </div>
+        <select
+          value={cat}
+          onChange={e => setCat(e.target.value as ExpenseCategory)}
+          className="bg-slate-50 rounded-xl px-2 py-2.5 text-[12px] text-slate-600 outline-none border-0 flex-shrink-0"
+        >
+          {EXPENSE_CATS.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+        </select>
       </div>
-      <select
-        value={cat}
-        onChange={e => setCat(e.target.value as ExpenseCategory)}
-        className="bg-slate-50 rounded-xl px-2 py-2 text-[12px] text-slate-600 outline-none border-0 flex-shrink-0"
-      >
-        {EXPENSE_CATS.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
-      </select>
-      <input
-        type="text"
-        value={note}
-        onChange={e => setNote(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && submit()}
-        placeholder="Note (optional)"
-        className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-[12px] text-slate-600 outline-none placeholder-slate-400 min-w-0"
-      />
-      <button
-        onClick={submit}
-        disabled={!amount || parseFloat(amount) <= 0}
-        className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white transition-opacity disabled:opacity-40"
-        style={{ background: '#2563eb' }}
-      >
-        <Plus size={14} />
-      </button>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder="Note (optional)"
+          className="flex-1 bg-slate-50 rounded-xl px-3 py-2.5 text-[12px] text-slate-600 outline-none placeholder-slate-400 min-w-0"
+        />
+        <button
+          onClick={submit}
+          disabled={!amount || parseFloat(amount) <= 0}
+          className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-opacity disabled:opacity-40"
+          style={{ background: '#2563eb' }}
+        >
+          <Plus size={16} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -235,20 +239,20 @@ export default function Dashboard() {
   })();
 
   return (
-    <div className="px-6 lg:px-8 py-8 max-w-5xl">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-5 sm:mb-6">
         <div>
           <p className="text-[13px] font-semibold text-blue-600 mb-1">{greeting} 👋</p>
-          <h1 className="text-[28px] font-black text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
             {doneToday === total && total > 0 ? 'Perfect day! 🎉' : 'Dashboard'}
           </h1>
-          <p className="text-[13px] text-slate-400 mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+          <p className="text-[12px] sm:text-[13px] text-slate-400 mt-1">{format(new Date(), 'EEEE, MMM d')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setBudgetModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold border transition-colors hover:bg-white"
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold border transition-colors hover:bg-white"
             style={{ border: '1px solid #e2e8f0', color: '#475569', background: 'transparent' }}
             title="Update daily budget"
           >
@@ -256,10 +260,10 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
           >
-            <Plus size={15} /> New habit
+            <Plus size={15} /> <span className="hidden sm:inline">New habit</span><span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
@@ -313,12 +317,12 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
         {/* Habits list */}
         <div className="lg:col-span-2 bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
+          <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
             <div>
               <h2 className="font-bold text-slate-900 text-[15px]">Today's habits</h2>
-              <p className="text-[12px] text-slate-400">{format(new Date(), 'EEEE, MMM d')}</p>
+              <p className="text-[12px] text-slate-400">{format(new Date(), 'EEE, MMM d')}</p>
             </div>
-            <a href="/habits" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700">
+            <a href="/habits" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700 py-2 px-1">
               View all <ArrowUpRight size={13} />
             </a>
           </div>
@@ -349,11 +353,11 @@ export default function Dashboard() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
-                      className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/70 transition-colors"
+                      className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-slate-50/70 transition-colors"
                     >
                       <button
                         onClick={() => toggleCompletion(habit.id, today)}
-                        className="flex-shrink-0 transition-all duration-200"
+                        className="flex-shrink-0 transition-all duration-200 p-1 -m-1"
                         style={{ color: done ? colors.hex : '#e2e8f0' }}
                       >
                         {done ? <CheckCircle2 size={22} /> : <Circle size={22} />}
@@ -437,10 +441,10 @@ export default function Dashboard() {
 
       {/* Spending card */}
       <div className="bg-white rounded-2xl overflow-hidden mb-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
+        <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
           <div>
             <h2 className="font-bold text-slate-900 text-[15px]">Today's spending</h2>
-            <p className="text-[12px] text-slate-400">{format(new Date(), 'MMM d')} · ₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget} budget</p>
+            <p className="text-[12px] text-slate-400">{format(new Date(), 'MMM d')} · ₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget}</p>
           </div>
           {/* Budget bar */}
           <div className="hidden sm:flex items-center gap-2">
@@ -468,7 +472,7 @@ export default function Dashboard() {
             {todayExpenses.slice().reverse().map(expense => {
               const cat = EXPENSE_CATS.find(c => c.value === expense.category);
               return (
-                <div key={expense.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors group">
+                <div key={expense.id} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-slate-50/60 transition-colors group">
                   <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-base flex-shrink-0">
                     {cat?.icon}
                   </div>
@@ -481,7 +485,7 @@ export default function Dashboard() {
                   <span className="font-bold text-[15px] text-slate-900">₹{expense.amount.toFixed(0)}</span>
                   <button
                     onClick={() => deleteExpense(expense.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 ml-1"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 ml-1 p-1"
                   >
                     <X size={14} />
                   </button>
@@ -500,9 +504,9 @@ export default function Dashboard() {
 
       {/* Habit breakdown table */}
       <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
+        <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
           <h2 className="font-bold text-slate-900 text-[15px]">Habit breakdown</h2>
-          <a href="/analytics" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700">
+          <a href="/analytics" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700 py-2 px-1">
             Analytics <ArrowUpRight size={13} />
           </a>
         </div>
@@ -520,7 +524,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/60 transition-colors"
+                  className="px-4 sm:px-5 py-4 flex items-center gap-3 sm:gap-4 hover:bg-slate-50/60 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: colors.hexLight }}>
                     {habit.icon}

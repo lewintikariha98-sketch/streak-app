@@ -80,9 +80,9 @@ export default function AnalyticsPage() {
   })();
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Analytics</h1>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Analytics</h1>
         <p className="text-gray-400 text-sm mt-1">Insights across your habit journey</p>
       </div>
 

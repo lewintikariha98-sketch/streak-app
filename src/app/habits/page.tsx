@@ -66,20 +66,20 @@ export default function HabitsPage() {
   const categories = [...new Set(data.habits.map(h => h.category))];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-5 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Habits</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Habits</h1>
           <p className="text-gray-400 text-sm mt-1">
             {data.habits.filter(h => !h.archived).length} active · {data.habits.filter(h => h.archived).length} archived
           </p>
         </div>
         <button
           onClick={() => { setEditingHabit(undefined); setModalOpen(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 min-h-[44px] bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
         >
-          <Plus size={16} /> New habit
+          <Plus size={16} /> <span className="hidden sm:inline">New habit</span><span className="sm:hidden">Add</span>
         </button>
       </div>
 
@@ -259,7 +259,7 @@ export default function HabitsPage() {
                               key={day.date}
                               onClick={() => toggleCompletion(habit.id, day.date)}
                               title={day.date}
-                              className={`flex flex-col items-center gap-0.5 w-8 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                              className={`flex flex-col items-center gap-0.5 w-9 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
                                 habit.completions[day.date]
                                   ? `${colors.bg} text-white`
                                   : day.isToday
