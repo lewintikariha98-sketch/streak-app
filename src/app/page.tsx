@@ -33,7 +33,7 @@ const MOODS = [
 ];
 
 function ProgressRing({ pct, done, total }: { pct: number; done: number; total: number }) {
-  const size = 140;
+  const size = 130;
   const strokeW = 11;
   const r = (size - strokeW) / 2;
   const circ = 2 * Math.PI * r;
@@ -66,10 +66,15 @@ function ProgressRing({ pct, done, total }: { pct: number; done: number; total: 
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         {isComplete ? (
-          <span className="text-3xl">🎉</span>
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 300 }}
+            className="text-4xl"
+          >🎉</motion.span>
         ) : (
           <>
-            <span className="text-[28px] font-black text-slate-900 leading-none">{pct}%</span>
+            <span className="text-[26px] font-black text-slate-900 leading-none">{pct}%</span>
             <span className="text-[11px] text-slate-400 mt-0.5">{done}/{total}</span>
           </>
         )}
@@ -79,7 +84,6 @@ function ProgressRing({ pct, done, total }: { pct: number; done: number; total: 
 }
 
 function MoodWidget({ currentMood, onSave }: { currentMood?: number; onSave: (mood: 1 | 2 | 3 | 4 | 5) => void }) {
-  const [hovered, setHovered] = useState<number | null>(null);
   const selected = MOODS.find(m => m.v === currentMood);
 
   if (selected) {
@@ -97,52 +101,44 @@ function MoodWidget({ currentMood, onSave }: { currentMood?: number; onSave: (mo
   return (
     <div>
       <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">How are you feeling?</p>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         {MOODS.map(m => (
-          <button
+          <motion.button
             key={m.v}
+            whileTap={{ scale: 1.3 }}
             onClick={() => onSave(m.v)}
-            onMouseEnter={() => setHovered(m.v)}
-            onMouseLeave={() => setHovered(null)}
             title={m.label}
-            className="text-2xl transition-all duration-150"
-            style={{ transform: hovered === m.v ? 'scale(1.35)' : 'scale(1)' }}
+            className="text-[26px] leading-none"
           >
             {m.emoji}
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>
   );
 }
 
-function StatCard({
-  label, value, sub, icon, trend, trendUp, accentColor,
-}: {
-  label: string; value: string; sub?: string; icon: React.ReactNode;
-  trend?: string; trendUp?: boolean; accentColor: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${accentColor}18` }}>
-          <span style={{ color: accentColor }}>{icon}</span>
-        </div>
-        {trend && (
-          <span
-            className="flex items-center gap-0.5 text-[11px] font-semibold px-2 py-1 rounded-lg"
-            style={{ background: trendUp ? '#ecfdf5' : '#fff1f2', color: trendUp ? '#059669' : '#dc2626' }}
-          >
-            {trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-            {trend}
-          </span>
-        )}
-      </div>
-      <p className="text-[24px] font-black text-slate-900 tracking-tight leading-none">{value}</p>
-      <p className="text-[11px] font-semibold text-slate-500 mt-1.5 uppercase tracking-wide">{label}</p>
-      {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
-    </div>
+function StreakFire({ streak }: { streak: number }) {
+  if (streak >= 14) return (
+    <span className="flex items-center gap-0.5">
+      <span className="text-[14px]">🔥🔥</span>
+      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
+    </span>
   );
+  if (streak >= 7) return (
+    <span className="flex items-center gap-0.5">
+      <span className="text-[13px]">🔥</span>
+      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
+    </span>
+  );
+  if (streak >= 3) return (
+    <span className="flex items-center gap-0.5">
+      <Flame size={10} className="text-orange-400" />
+      <span className="text-[11px] text-slate-400">{streak}d</span>
+    </span>
+  );
+  if (streak >= 1) return <span className="text-[11px] text-slate-400">{streak}d streak</span>;
+  return <span className="text-[11px] text-slate-300">No streak</span>;
 }
 
 function AddExpenseRow({ onAdd }: { onAdd: (e: Omit<Expense, 'id' | 'createdAt'>) => void }) {
@@ -160,12 +156,13 @@ function AddExpenseRow({ onAdd }: { onAdd: (e: Omit<Expense, 'id' | 'createdAt'>
   };
 
   return (
-    <div className="px-4 sm:px-5 py-3.5 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2" style={{ borderTop: '1px solid #f1f5f9' }}>
+    <div className="px-4 py-3.5 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2" style={{ borderTop: '1px solid #f1f5f9' }}>
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-3 py-2.5 flex-shrink-0">
+        <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-3 py-3 flex-shrink-0">
           <span className="text-sm">₹</span>
           <input
             type="number"
+            inputMode="decimal"
             value={amount}
             onChange={e => setAmount(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && submit()}
@@ -176,7 +173,7 @@ function AddExpenseRow({ onAdd }: { onAdd: (e: Omit<Expense, 'id' | 'createdAt'>
         <select
           value={cat}
           onChange={e => setCat(e.target.value as ExpenseCategory)}
-          className="bg-slate-50 rounded-xl px-2 py-2.5 text-[12px] text-slate-600 outline-none border-0 flex-shrink-0"
+          className="bg-slate-50 rounded-xl px-2 py-3 text-[12px] text-slate-600 outline-none border-0 flex-shrink-0"
         >
           {EXPENSE_CATS.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
         </select>
@@ -188,16 +185,17 @@ function AddExpenseRow({ onAdd }: { onAdd: (e: Omit<Expense, 'id' | 'createdAt'>
           onChange={e => setNote(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && submit()}
           placeholder="Note (optional)"
-          className="flex-1 bg-slate-50 rounded-xl px-3 py-2.5 text-[12px] text-slate-600 outline-none placeholder-slate-400 min-w-0"
+          className="flex-1 bg-slate-50 rounded-xl px-3 py-3 text-[12px] text-slate-600 outline-none placeholder-slate-400 min-w-0"
         />
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={submit}
           disabled={!amount || parseFloat(amount) <= 0}
-          className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-opacity disabled:opacity-40"
+          className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40"
           style={{ background: '#2563eb' }}
         >
           <Plus size={16} />
-        </button>
+        </motion.button>
       </div>
     </div>
   );
@@ -207,17 +205,22 @@ function BudgetSetupModal({ onSave, initial }: { onSave: (n: number) => void; in
   const [val, setVal] = useState(String(initial === 50 ? '' : initial));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+      >
         <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #2563eb, #60a5fa)' }} />
         <div className="p-6">
           <div className="text-3xl mb-3">💰</div>
           <h2 className="text-xl font-black text-slate-900 mb-1">Set your daily budget</h2>
           <p className="text-[13px] text-slate-500 mb-5">We'll track your spending against this limit each day.</p>
-          <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-4 py-3.5 mb-4">
             <span className="text-xl font-bold text-slate-400">₹</span>
             <input
               type="number"
+              inputMode="numeric"
               value={val}
               onChange={e => setVal(e.target.value)}
               placeholder="e.g. 500"
@@ -226,12 +229,13 @@ function BudgetSetupModal({ onSave, initial }: { onSave: (n: number) => void; in
             />
             <span className="text-[12px] text-slate-400 font-medium">/day</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             {[200, 500, 1000, 2000].map(preset => (
-              <button
+              <motion.button
                 key={preset}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setVal(String(preset))}
-                className="flex-1 py-2 rounded-xl text-[12px] font-semibold border transition-all"
+                className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border transition-all"
                 style={{
                   background: val === String(preset) ? '#eff6ff' : 'white',
                   borderColor: val === String(preset) ? '#2563eb' : '#e2e8f0',
@@ -239,46 +243,22 @@ function BudgetSetupModal({ onSave, initial }: { onSave: (n: number) => void; in
                 }}
               >
                 ₹{preset}
-              </button>
+              </motion.button>
             ))}
           </div>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={() => { const n = parseFloat(val); if (n > 0) onSave(n); }}
             disabled={!val || parseFloat(val) <= 0}
-            className="w-full mt-4 py-3 rounded-xl text-white font-bold text-[14px] disabled:opacity-40 transition-opacity hover:opacity-90"
+            className="w-full py-3.5 rounded-2xl text-white font-bold text-[14px] disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}
           >
             Set budget & continue
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
-}
-
-function StreakFire({ streak }: { streak: number }) {
-  if (streak >= 14) return (
-    <span className="flex items-center gap-0.5">
-      <span className="text-[13px]">🔥🔥</span>
-      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
-    </span>
-  );
-  if (streak >= 7) return (
-    <span className="flex items-center gap-0.5">
-      <span className="text-[12px]">🔥</span>
-      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
-    </span>
-  );
-  if (streak >= 3) return (
-    <span className="flex items-center gap-0.5">
-      <Flame size={10} className="text-orange-400" />
-      <span className="text-[11px] text-slate-400">{streak}d</span>
-    </span>
-  );
-  if (streak >= 1) return (
-    <span className="text-[11px] text-slate-400">{streak}d streak</span>
-  );
-  return <span className="text-[11px] text-slate-300">No streak</span>;
 }
 
 export default function Dashboard() {
@@ -293,7 +273,6 @@ export default function Dashboard() {
   );
 
   const budgetNotSet = data.dailyBudget === 50 && data.expenses.length === 0;
-
   const activeHabits = data.habits.filter(h => !h.archived);
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
@@ -338,85 +317,58 @@ export default function Dashboard() {
   const perfectDay = doneToday === total && total > 0;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
+    <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 max-w-5xl mx-auto">
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div>
           <p className="text-[13px] font-semibold text-blue-600 mb-0.5">{greeting} 👋</p>
           <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
             {perfectDay ? 'Perfect day! 🎉' : 'Dashboard'}
           </h1>
-          <p className="text-[12px] text-slate-400 mt-1">{format(new Date(), 'EEEE, MMMM d')}</p>
+          <p className="text-[12px] text-slate-400 mt-0.5">{format(new Date(), 'EEEE, MMMM d')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setBudgetModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold border transition-colors hover:bg-white"
-            style={{ border: '1px solid #e2e8f0', color: '#475569', background: 'transparent' }}
-          >
-            <Wallet size={14} /> ₹{data.dailyBudget}
-          </button>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
-          >
-            <Plus size={15} /> <span className="hidden sm:inline">New habit</span><span className="sm:hidden">Add</span>
-          </button>
-        </div>
+        <motion.button
+          whileTap={{ scale: 0.93 }}
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-3 rounded-2xl text-[13px] font-semibold text-white"
+          style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
+        >
+          <Plus size={16} />
+          <span className="hidden sm:inline">New habit</span>
+          <span className="sm:hidden">Add</span>
+        </motion.button>
       </div>
 
-      {/* Hero: Progress Ring + Stats */}
-      <div className="bg-white rounded-2xl p-5 mb-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Ring */}
-          <div className="flex flex-col items-center gap-4 sm:pr-6" style={{ borderRight: '0', }}>
-            <ProgressRing pct={pctToday} done={doneToday} total={total} />
-            <div className="text-center">
-              <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wide">Today's Progress</p>
+      {/* Hero card — Progress ring + Mood */}
+      <div className="bg-white rounded-3xl p-5 mb-4" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+        <div className="flex items-center gap-5">
+          <ProgressRing pct={pctToday} done={doneToday} total={total} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-[13px] font-bold text-slate-800">Today's Progress</p>
               {deltaCompletion !== 0 && (
                 <span
-                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
                   style={{ background: deltaCompletion >= 0 ? '#ecfdf5' : '#fff1f2', color: deltaCompletion >= 0 ? '#059669' : '#dc2626' }}
                 >
-                  {deltaCompletion >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                  {Math.abs(deltaCompletion)}% vs yesterday
+                  {deltaCompletion >= 0 ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+                  {Math.abs(deltaCompletion)}%
                 </span>
               )}
             </div>
-          </div>
-
-          {/* Vertical divider */}
-          <div className="hidden sm:block w-px self-stretch bg-slate-100 mx-2" />
-
-          {/* Stats grid + Mood */}
-          <div className="flex-1 w-full">
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: 'Streak', value: `${totalStreak}d`, icon: '🔥', color: '#f97316' },
-                { label: 'Level', value: `Lv.${level}`, icon: '⚡', color: '#7c3aed', sub: title },
-                { label: 'XP', value: xp.toLocaleString(), icon: '✨', color: '#0891b2' },
-              ].map(s => (
-                <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: `${s.color}0d`, border: `1px solid ${s.color}20` }}>
-                  <span className="text-lg">{s.icon}</span>
-                  <p className="text-[18px] font-black mt-0.5" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{s.label}</p>
-                  {s.sub && <p className="text-[10px] text-slate-400">{s.sub}</p>}
-                </div>
-              ))}
-            </div>
 
             {/* XP bar */}
-            <div className="mb-4">
-              <div className="flex justify-between text-[11px] text-slate-400 mb-1.5">
-                <span>Level {level} — {title}</span>
-                <span>{current}/{required} XP</span>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-400">Lv.{level} {title}</span>
+                <span className="text-[11px] font-semibold text-violet-600">{xp.toLocaleString()} XP</span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPct}%` }}
-                  transition={{ duration: 1, ease: 'easeOut' }}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
                   className="h-full rounded-full"
                   style={{ background: 'linear-gradient(90deg, #7c3aed, #a78bfa)' }}
                 />
@@ -429,211 +381,232 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <StatCard
-          label="Today's spend"
-          value={`₹${todaySpend.toFixed(0)}`}
-          sub={overBudget ? `₹${Math.abs(budgetLeft).toFixed(0)} over budget` : `₹${budgetLeft.toFixed(0)} left`}
-          icon={<Wallet size={18} />}
-          trend={overBudget ? 'Over' : 'On track'}
-          trendUp={!overBudget}
-          accentColor="#0891b2"
-        />
-        <StatCard
-          label="Habits done today"
-          value={`${doneToday}/${total}`}
-          sub={total === 0 ? 'Add habits to start' : perfectDay ? 'All done! 🎉' : `${total - doneToday} remaining`}
-          icon={<CheckCircle2 size={18} />}
-          accentColor="#059669"
-        />
+      {/* Mini stat row */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {[
+          { label: 'Streak', value: `${totalStreak}d`, icon: '🔥', color: '#f97316' },
+          { label: 'Habits done', value: `${doneToday}/${total}`, icon: '✅', color: '#059669' },
+          { label: 'Budget left', value: `₹${Math.abs(budgetLeft).toFixed(0)}`, icon: overBudget ? '⚠️' : '💰', color: overBudget ? '#dc2626' : '#0891b2' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl px-3 py-3 text-center" style={{ border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+            <span className="text-xl">{s.icon}</span>
+            <p className="text-[16px] font-black mt-0.5" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[10px] text-slate-400 font-medium">{s.label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-        {/* Habits list */}
-        <div className="lg:col-span-2 bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-          <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
-            <div>
-              <h2 className="font-bold text-slate-900 text-[15px]">Today's habits</h2>
-              <p className="text-[12px] text-slate-400">{format(new Date(), 'EEE, MMM d')}</p>
-            </div>
-            <a href="/habits" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700 py-2 px-1">
-              View all <ArrowUpRight size={13} />
-            </a>
+      {/* Today's habits */}
+      <div className="bg-white rounded-3xl overflow-hidden mb-4" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
+        <div className="px-4 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
+          <div>
+            <h2 className="font-bold text-slate-900 text-[15px]">Today's habits</h2>
+            <p className="text-[11px] text-slate-400">{format(new Date(), 'EEE, MMM d')}</p>
           </div>
-
-          {activeHabits.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl mb-3">✨</div>
-              <p className="font-semibold text-slate-700 mb-1">No habits yet</p>
-              <p className="text-[13px] text-slate-400 mb-4">Start building your routine</p>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="px-4 py-2 text-white text-[13px] font-semibold rounded-xl hover:opacity-90 transition-opacity"
-                style={{ background: '#2563eb' }}
-              >
-                Create first habit
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              <AnimatePresence>
-                {activeHabits.map((habit, i) => {
-                  const done = !!habit.completions[today];
-                  const stats = getHabitStats(habit);
-                  const colors = colorMap[habit.color];
-                  const isOnFire = stats.currentStreak >= 14;
-                  return (
-                    <motion.div
-                      key={habit.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-slate-50/70 transition-colors"
-                    >
-                      <button
-                        onClick={() => toggleCompletion(habit.id, today)}
-                        className="flex-shrink-0 transition-all duration-200 p-1 -m-1 active:scale-90"
-                        style={{ color: done ? colors.hex : '#e2e8f0' }}
-                      >
-                        {done
-                          ? <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}><CheckCircle2 size={22} /></motion.span>
-                          : <Circle size={22} />
-                        }
-                      </button>
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0"
-                        style={{
-                          background: colors.hexLight,
-                          boxShadow: isOnFire ? `0 0 0 2px ${colors.hex}40, 0 0 12px ${colors.hex}30` : undefined,
-                        }}
-                      >
-                        {habit.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[14px] font-semibold ${done ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                          {habit.name}
-                        </p>
-                        <div className="mt-0.5">
-                          <StreakFire streak={stats.currentStreak} />
-                        </div>
-                      </div>
-                      <div className="hidden sm:flex gap-0.5">
-                        {days.map(d => (
-                          <div key={d.date} className="w-1.5 h-5 rounded-full" style={{ background: habit.completions[d.date] ? colors.hex : '#f1f5f9' }} />
-                        ))}
-                      </div>
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                        style={{ background: done ? colors.hex : colors.hexLight, color: done ? 'white' : colors.hex }}
-                      >
-                        {stats.completionRate30}%
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-4">
-          {/* Weekly chart */}
-          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-            <h3 className="font-bold text-slate-900 text-[14px] mb-0.5">Weekly completion</h3>
-            <p className="text-[11px] text-slate-400 mb-3">% of habits done per day</p>
-            <ResponsiveContainer width="100%" height={100}>
-              <BarChart data={weeklyData} barSize={14}>
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: '#0B1426', border: 'none', borderRadius: 10, fontSize: 11, color: 'white' }}
-                  formatter={(v) => [`${v}%`, 'Done']}
-                />
-                <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
-                  {weeklyData.map((entry, i) => (
-                    <Cell key={i} fill={entry.date === today ? '#2563eb' : '#dbeafe'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Spending chart */}
-          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-            <h3 className="font-bold text-slate-900 text-[14px] mb-0.5">Daily spend</h3>
-            <p className="text-[11px] text-slate-400 mb-3">Budget: ₹{data.dailyBudget}/day</p>
-            <ResponsiveContainer width="100%" height={80}>
-              <AreaChart data={spendData}>
-                <defs>
-                  <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0891b2" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: '#0B1426', border: 'none', borderRadius: 10, fontSize: 11, color: 'white' }}
-                  formatter={(v) => [`₹${Number(v).toFixed(0)}`, 'Spend']}
-                />
-                <Area type="monotone" dataKey="spend" stroke="#0891b2" strokeWidth={2} fill="url(#spendGrad)" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Quick journal link */}
-          <a
-            href="/journal"
-            className="block bg-white rounded-2xl p-4 hover:shadow-md transition-shadow group"
-            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#f5f3ff' }}>
-                  <Sparkles size={16} style={{ color: '#7c3aed' }} />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-slate-800">Daily Journal</p>
-                  <p className="text-[11px] text-slate-400">{todayNote ? `Mood logged · ${todayNote.content ? 'Note added' : 'Add a note'}` : 'Log your mood & thoughts'}</p>
-                </div>
-              </div>
-              <ArrowUpRight size={14} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
-            </div>
+          <a href="/habits" className="flex items-center gap-0.5 text-[12px] font-semibold text-blue-600 py-2 px-1">
+            All <ArrowUpRight size={13} />
           </a>
         </div>
+
+        {activeHabits.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl mb-3">✨</div>
+            <p className="font-semibold text-slate-700 mb-1">No habits yet</p>
+            <p className="text-[13px] text-slate-400 mb-4">Start building your routine</p>
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setModalOpen(true)}
+              className="px-5 py-2.5 text-white text-[13px] font-semibold rounded-xl"
+              style={{ background: '#2563eb' }}
+            >
+              Create first habit
+            </motion.button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            <AnimatePresence>
+              {activeHabits.map((habit, i) => {
+                const done = !!habit.completions[today];
+                const stats = getHabitStats(habit);
+                const colors = colorMap[habit.color];
+                const isOnFire = stats.currentStreak >= 7;
+                return (
+                  <motion.div
+                    key={habit.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
+                  >
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={() => toggleCompletion(habit.id, today)}
+                      className="flex-shrink-0 p-1 -m-1"
+                      style={{ color: done ? colors.hex : '#d1d5db' }}
+                    >
+                      {done
+                        ? <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500 }}>
+                            <CheckCircle2 size={24} />
+                          </motion.div>
+                        : <Circle size={24} />
+                      }
+                    </motion.button>
+
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                      style={{
+                        background: colors.hexLight,
+                        boxShadow: isOnFire ? `0 0 0 2px ${colors.hex}40` : undefined,
+                      }}
+                    >
+                      {habit.icon}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[14px] font-semibold leading-tight ${done ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                        {habit.name}
+                      </p>
+                      <div className="mt-0.5">
+                        <StreakFire streak={stats.currentStreak} />
+                      </div>
+                    </div>
+
+                    {/* 7-day bar */}
+                    <div className="hidden sm:flex gap-0.5 flex-shrink-0">
+                      {days.map(d => (
+                        <div key={d.date} className="w-1.5 h-5 rounded-full" style={{ background: habit.completions[d.date] ? colors.hex : '#f1f5f9' }} />
+                      ))}
+                    </div>
+
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-[12px] font-bold flex-shrink-0"
+                      style={{ background: done ? colors.hex : colors.hexLight, color: done ? 'white' : colors.hex }}
+                    >
+                      {stats.completionRate30}%
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+          <p className="font-bold text-slate-900 text-[13px] mb-0.5">Weekly</p>
+          <p className="text-[10px] text-slate-400 mb-2">% done per day</p>
+          <ResponsiveContainer width="100%" height={80}>
+            <BarChart data={weeklyData} barSize={10}>
+              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: '#0B1426', border: 'none', borderRadius: 8, fontSize: 10, color: 'white' }}
+                formatter={(v) => [`${v}%`, '']}
+              />
+              <Bar dataKey="rate" radius={[3, 3, 0, 0]}>
+                {weeklyData.map((entry, i) => (
+                  <Cell key={i} fill={entry.date === today ? '#2563eb' : '#dbeafe'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+          <p className="font-bold text-slate-900 text-[13px] mb-0.5">Spend</p>
+          <p className="text-[10px] text-slate-400 mb-2">₹{data.dailyBudget}/day budget</p>
+          <ResponsiveContainer width="100%" height={80}>
+            <AreaChart data={spendData}>
+              <defs>
+                <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0891b2" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: '#0B1426', border: 'none', borderRadius: 8, fontSize: 10, color: 'white' }}
+                formatter={(v) => [`₹${Number(v).toFixed(0)}`, '']}
+              />
+              <Area type="monotone" dataKey="spend" stroke="#0891b2" strokeWidth={2} fill="url(#spendGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <motion.a
+          whileTap={{ scale: 0.97 }}
+          href="/analytics"
+          className="bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-slate-50"
+          style={{ border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#ede9fe' }}>
+            <Zap size={16} style={{ color: '#7c3aed' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-slate-800">Analytics</p>
+            <p className="text-[10px] text-slate-400">View insights</p>
+          </div>
+        </motion.a>
+
+        <motion.a
+          whileTap={{ scale: 0.97 }}
+          href="/journal"
+          className="bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-slate-50"
+          style={{ border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f5f3ff' }}>
+            <Sparkles size={16} style={{ color: '#7c3aed' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-slate-800">Journal</p>
+            <p className="text-[10px] text-slate-400">{todayNote ? 'Entry saved ✓' : 'Log your mood'}</p>
+          </div>
+        </motion.a>
       </div>
 
       {/* Spending card */}
-      <div className="bg-white rounded-2xl overflow-hidden mb-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
+      <div className="bg-white rounded-3xl overflow-hidden mb-4" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
+        <div className="px-4 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
           <div>
             <h2 className="font-bold text-slate-900 text-[15px]">Today's spending</h2>
-            <p className="text-[12px] text-slate-400">{format(new Date(), 'MMM d')} · ₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget}</p>
+            <p className="text-[11px] text-slate-400">₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget} · {overBudget ? '⚠️ Over budget' : 'On track'}</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min((todaySpend / data.dailyBudget) * 100, 100)}%`,
-                  background: overBudget ? '#dc2626' : '#0891b2',
-                }}
-              />
-            </div>
-            <span className={`text-[12px] font-semibold ${overBudget ? 'text-red-500' : 'text-cyan-600'}`}>
-              {overBudget ? 'Over' : `${Math.round((todaySpend / data.dailyBudget) * 100)}%`}
-            </span>
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setBudgetModalOpen(true)}
+            className="flex items-center gap-1 px-3 py-2 rounded-xl text-[12px] font-semibold"
+            style={{ border: '1px solid #e2e8f0', color: '#475569' }}
+          >
+            <Wallet size={12} /> ₹{data.dailyBudget}
+          </motion.button>
+        </div>
+
+        {/* Budget bar */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min((todaySpend / data.dailyBudget) * 100, 100)}%`,
+                background: overBudget ? '#dc2626' : '#0891b2',
+              }}
+            />
           </div>
         </div>
+
         <AddExpenseRow onAdd={addExpense} />
+
         {todayExpenses.length > 0 && (
           <div className="divide-y divide-slate-50">
             {todayExpenses.slice().reverse().map(expense => {
               const cat = EXPENSE_CATS.find(c => c.value === expense.category);
               return (
-                <div key={expense.id} className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-slate-50/60 transition-colors group">
-                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-base flex-shrink-0">
+                <div key={expense.id} className="flex items-center gap-3 px-4 py-3 active:bg-slate-50/60 transition-colors group">
+                  <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-base flex-shrink-0">
                     {cat?.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -641,82 +614,20 @@ export default function Dashboard() {
                     <p className="text-[11px] text-slate-400">{cat?.label}</p>
                   </div>
                   <span className="font-bold text-[15px] text-slate-900">₹{expense.amount.toFixed(0)}</span>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => deleteExpense(expense.id)}
-                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 ml-1 p-1"
+                    className="text-slate-300 hover:text-red-400 p-1.5"
                   >
                     <X size={14} />
-                  </button>
+                  </motion.button>
                 </div>
               );
             })}
           </div>
         )}
         {todayExpenses.length === 0 && (
-          <div className="py-8 text-center text-[13px] text-slate-400">No expenses logged today — add one above</div>
-        )}
-      </div>
-
-      {/* Habit breakdown table */}
-      <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <div className="px-4 sm:px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #f8fafc' }}>
-          <h2 className="font-bold text-slate-900 text-[15px]">Habit breakdown</h2>
-          <a href="/analytics" className="flex items-center gap-1 text-[12px] font-semibold text-blue-600 hover:text-blue-700 py-2 px-1">
-            Analytics <ArrowUpRight size={13} />
-          </a>
-        </div>
-        {activeHabits.length === 0 ? (
-          <div className="py-10 text-center text-[13px] text-slate-400">No habits to show</div>
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {activeHabits.map((habit, i) => {
-              const stats = getHabitStats(habit);
-              const colors = colorMap[habit.color];
-              const done = !!habit.completions[today];
-              return (
-                <motion.div
-                  key={habit.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="px-4 sm:px-5 py-4 flex items-center gap-3 sm:gap-4 hover:bg-slate-50/60 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: colors.hexLight }}>
-                    {habit.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-[14px] text-slate-800 truncate">{habit.name}</p>
-                      <span
-                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0"
-                        style={{ background: done ? '#dcfce7' : '#f8fafc', color: done ? '#16a34a' : '#94a3b8' }}
-                      >
-                        {done ? '✓ Done' : 'Pending'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${stats.completionRate30}%`, background: colors.hex }} />
-                      </div>
-                      <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: colors.hex }}>{stats.completionRate30}%</span>
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-5 flex-shrink-0">
-                    {[
-                      { val: stats.currentStreak, lbl: 'streak' },
-                      { val: stats.longestStreak, lbl: 'best' },
-                      { val: stats.totalCompletions, lbl: 'total' },
-                    ].map(s => (
-                      <div key={s.lbl} className="text-center">
-                        <p className="text-[16px] font-black text-slate-900">{s.val}</p>
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">{s.lbl}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+          <div className="py-6 text-center text-[13px] text-slate-400">No expenses yet today</div>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
@@ -11,6 +11,24 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Streak",
   description: "Your personal habit ecosystem",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Streak",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "format-detection": "telephone=no",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0B1426",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -240,7 +240,7 @@ export default function GardenPage() {
         </div>
       </div>
 
-      {/* Habit detail drawer */}
+      {/* Habit detail drawer — bottom sheet on mobile, right panel on desktop */}
       <AnimatePresence>
         {selected && selectedStats && selectedXP && (
           <>
@@ -248,15 +248,16 @@ export default function GardenPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 z-40"
+              className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
               onClick={() => setSelected(null)}
             />
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-white shadow-2xl z-50 overflow-y-auto"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+              className="fixed bottom-0 left-0 right-0 sm:right-0 sm:top-0 sm:bottom-0 sm:left-auto sm:w-96 bg-white shadow-2xl z-50 overflow-y-auto rounded-t-3xl sm:rounded-none"
+              style={{ maxHeight: '90vh' }}
             >
               <div className={`h-1.5 bg-gradient-to-r ${colorMap[selected.color].gradient}`} />
               <div className="p-6">
