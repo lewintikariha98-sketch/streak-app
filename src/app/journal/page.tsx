@@ -3,9 +3,41 @@
 import { useState, useEffect } from 'react';
 import { format, subDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronDown, BookOpen } from 'lucide-react';
+import { Save, ChevronDown, BookOpen, RefreshCw } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { DailyNote } from '@/types';
+
+const NAVAL_QUOTES = [
+  { text: "You will get rich by giving society what it wants but does not yet know how to get. At scale.", cat: "Wealth" },
+  { text: "Seek wealth, not money or status. Wealth is having assets that earn while you sleep.", cat: "Wealth" },
+  { text: "Play long-term games with long-term people.", cat: "Thinking" },
+  { text: "Read what you love until you love to read.", cat: "Learning" },
+  { text: "The secret to doing good research is always to be a little underemployed. You waste years by not being able to waste hours.", cat: "Productivity" },
+  { text: "All the real benefits in life come from compound interest.", cat: "Wealth" },
+  { text: "Specific knowledge is knowledge you cannot be trained for. If society can train you, it can train someone else and replace you.", cat: "Career" },
+  { text: "Arm yourself with specific knowledge, accountability, and leverage.", cat: "Career" },
+  { text: "A busy mind accelerates the perceived passage of time. Meditation slows it down.", cat: "Mind" },
+  { text: "To make money, you must have equity — a piece of a business. Give society what it wants but cannot get elsewhere.", cat: "Wealth" },
+  { text: "Free time is the enemy of the young.", cat: "Productivity" },
+  { text: "The greatest superpower is the ability to change yourself.", cat: "Growth" },
+  { text: "Courage isn't the absence of fear. It's acting in the face of fear.", cat: "Mind" },
+  { text: "If you can't decide, the answer is no.", cat: "Decisions" },
+  { text: "Be present above all else.", cat: "Mind" },
+  { text: "Judge yourself by your internal scorecard, not an external one.", cat: "Mind" },
+  { text: "What you do, who you do it with, and how you do it — these are the important decisions.", cat: "Life" },
+  { text: "The modern mind is overstimulated and the modern body is understimulated.", cat: "Health" },
+  { text: "My one measure of success is: how long does it take me to get what I want?", cat: "Success" },
+  { text: "Desire is a contract you make with yourself to be unhappy until you get what you want.", cat: "Mind" },
+  { text: "Earn with your mind, not your time.", cat: "Wealth" },
+  { text: "Set and enforce an aspirational personal hourly rate.", cat: "Productivity" },
+  { text: "If you're not willing to own a stock for ten years, don't even think about owning it for ten minutes.", cat: "Investing" },
+  { text: "The best relationships are where you forget to keep score.", cat: "Relationships" },
+  { text: "Peace of mind is the reward for a life lived in alignment with your values.", cat: "Life" },
+  { text: "Working hard is not enough. You also have to work on the right things.", cat: "Productivity" },
+  { text: "A fit body, a calm mind, a house full of love. These things cannot be bought — they must be earned.", cat: "Life" },
+  { text: "Most of our suffering comes from avoidance.", cat: "Mind" },
+  { text: "To be honest with the world, first be honest with yourself.", cat: "Values" },
+  { text: "Nailing 'when to work on what' is more important than nailing any task.", cat: "Productivity" },
+];
 
 const MOOD_OPTIONS = [
   { v: 1 as const, emoji: '😞', label: 'Rough',   color: '#dc2626', bg: '#fee2e2' },
@@ -30,6 +62,12 @@ export default function JournalPage() {
   const [content, setContent] = useState(todayNote?.content ?? '');
   const [saved, setSaved] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [quoteIdx, setQuoteIdx] = useState(() => {
+    const start = new Date(new Date().getFullYear(), 0, 0);
+    const diff = new Date().getTime() - start.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24)) % NAVAL_QUOTES.length;
+  });
+  const [showAllQuotes, setShowAllQuotes] = useState(false);
 
   useEffect(() => {
     if (todayNote) {
@@ -236,6 +274,99 @@ export default function JournalPage() {
           <p className="text-sm text-slate-400 mt-1">Save today's entry above to get started</p>
         </div>
       )}
+
+      {/* Naval Ravikant Wisdom */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="font-bold text-slate-900 text-lg">Naval's Wisdom</h2>
+            <p className="text-[12px] text-slate-400">Daily quote from Naval Ravikant</p>
+          </div>
+          <button
+            onClick={() => setQuoteIdx(i => (i + 1) % NAVAL_QUOTES.length)}
+            className="p-2 rounded-xl bg-violet-50 text-violet-500 hover:bg-violet-100 transition-colors"
+            title="Next quote"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
+
+        {/* Featured quote */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={quoteIdx}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-2xl p-5 mb-4 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+              boxShadow: '0 8px 32px rgba(99,102,241,0.25)',
+            }}
+          >
+            {/* Decorative quote mark */}
+            <div className="absolute top-3 right-4 text-6xl font-serif text-indigo-400 opacity-20 leading-none select-none">"</div>
+
+            <span
+              className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
+              style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa' }}
+            >
+              {NAVAL_QUOTES[quoteIdx].cat}
+            </span>
+
+            <p className="text-white font-medium text-[15px] leading-relaxed mb-4 relative z-10">
+              "{NAVAL_QUOTES[quoteIdx].text}"
+            </p>
+
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">N</div>
+              <p className="text-indigo-300 text-[12px] font-semibold">Naval Ravikant</p>
+              <span className="text-indigo-500 text-[11px] ml-auto">{quoteIdx + 1} / {NAVAL_QUOTES.length}</span>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Browse all quotes */}
+        <button
+          onClick={() => setShowAllQuotes(v => !v)}
+          className="w-full py-3 rounded-xl text-[13px] font-semibold text-slate-500 bg-white border border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mb-3"
+        >
+          {showAllQuotes ? 'Hide all quotes' : `Browse all ${NAVAL_QUOTES.length} quotes`}
+          <ChevronDown size={14} style={{ transform: showAllQuotes ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+
+        <AnimatePresence>
+          {showAllQuotes && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-2 pb-4">
+                {NAVAL_QUOTES.map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setQuoteIdx(i); setShowAllQuotes(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="w-full text-left bg-white rounded-xl p-3.5 transition-all hover:shadow-sm"
+                    style={{ border: quoteIdx === i ? '1.5px solid #818cf8' : '1px solid #f1f5f9' }}
+                  >
+                    <span
+                      className="inline-block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5"
+                      style={{ background: '#f5f3ff', color: '#7c3aed' }}
+                    >
+                      {q.cat}
+                    </span>
+                    <p className="text-[13px] text-slate-700 leading-snug line-clamp-2">"{q.text}"</p>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

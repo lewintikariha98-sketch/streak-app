@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { format, subDays } from 'date-fns';
-import { Plus, CheckCircle2, Circle, Flame, Zap, ArrowRight, Wallet, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { Plus, CheckCircle2, Circle, Zap, ArrowRight, Wallet, X, Clock } from 'lucide-react';
+import { motion, AnimatePresence, useSpring, useTransform, useMotionValue } from 'framer-motion';
 import { useApp } from '@/contexts/AppContext';
-import { getHabitStats, getLast7Days, getTotalXP, getLevel } from '@/lib/stats';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { getHabitStats, getTotalXP, getLevel } from '@/lib/stats';
 import { colorMap } from '@/lib/colors';
 import HabitModal from '@/components/habits/HabitModal';
 import { Expense, ExpenseCategory } from '@/types';
@@ -32,13 +33,14 @@ const EXPENSE_CATS: { value: ExpenseCategory; label: string; icon: string }[] = 
 function XPPop({ xp, onDone }: { xp: number; onDone: () => void }) {
   return (
     <motion.div
-      className="pointer-events-none absolute right-2 top-0 z-20 text-[11px] font-black text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5"
-      initial={{ opacity: 1, y: 0 }}
-      animate={{ opacity: 0, y: -32 }}
-      transition={{ duration: 0.9, ease: 'easeOut' }}
+      className="pointer-events-none absolute right-3 top-1 z-20 text-[12px] font-black rounded-full px-2.5 py-1"
+      style={{ background: 'linear-gradient(135deg,#6366f1,#a78bfa)', color: 'white', boxShadow: '0 2px 12px rgba(99,102,241,0.5)' }}
+      initial={{ opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: 0, y: -40, scale: 1.1 }}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
       onAnimationComplete={onDone}
     >
-      +{xp} XP
+      +{xp} XP ⚡
     </motion.div>
   );
 }
@@ -96,11 +98,12 @@ function ProgressRing({ pct, done, total }: { pct: number; done: number; total: 
 
 export default function Dashboard() {
   const { data, loaded, toggleCompletion, addHabit, addExpense, deleteExpense, updateDailyBudget, addNote } = useApp();
+  const { pushToast, triggerConfetti } = useNotifications();
   const [modalOpen, setModalOpen] = useState(false);
   const [showSpend, setShowSpend] = useState(false);
   const [spendAmount, setSpendAmount] = useState('');
   const [spendCat, setSpendCat] = useState<ExpenseCategory>('food');
-  const [xpPops, setXpPops] = useState<{ id: string; xp: number }[]>([]);
+  const [xpPops, setXpPops] = useState<{ id: string; xp: number; habitId: string }[]>([]);
 
   if (!loaded) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -128,14 +131,24 @@ export default function Dashboard() {
 
   const greeting = new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening';
 
+  // Urgency: hours left today
+  const hoursLeft = 24 - new Date().getHours();
+  const isUrgent = hoursLeft <= 4 && done < total && total > 0;
+  const isMidUrgent = hoursLeft <= 8 && hoursLeft > 4 && done < total && total > 0;
+
   const handleCheck = (habitId: string) => {
     const habit = activeHabits.find(h => h.id === habitId)!;
     const wasUnchecked = !habit.completions[today];
     toggleCompletion(habitId, today);
     if (wasUnchecked) {
       const stats = getHabitStats(habit);
-      const earnedXP = 10 + stats.currentStreak; // base + streak bonus
-      setXpPops(prev => [...prev, { id: Math.random().toString(36), xp: earnedXP }]);
+      const earnedXP = 10 + Math.min(stats.currentStreak, 20);
+      setXpPops(prev => [...prev, { id: Math.random().toString(36), xp: earnedXP, habitId }]);
+      // After this toggle, check if now all done
+      const willBePerfect = activeHabits.filter(h => h.id === habitId ? true : !!h.completions[today]).length === activeHabits.length;
+      if (willBePerfect) {
+        setTimeout(() => triggerConfetti(), 300);
+      }
     }
   };
 
@@ -171,6 +184,44 @@ export default function Dashboard() {
           <Plus size={20} />
         </motion.button>
       </div>
+
+      {/* Urgency banner */}
+      <AnimatePresence>
+        {(isUrgent || isMidUrgent) && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            className="mb-4 rounded-2xl overflow-hidden"
+            style={{
+              background: isUrgent ? 'linear-gradient(135deg,#7f1d1d,#991b1b)' : 'linear-gradient(135deg,#78350f,#92400e)',
+              border: `1px solid ${isUrgent ? '#ef4444' : '#f59e0b'}30`,
+            }}
+          >
+            <div className="flex items-center gap-3 px-4 py-3">
+              <motion.span
+                animate={isUrgent ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="text-xl flex-shrink-0"
+              >
+                {isUrgent ? '⚠️' : '⏰'}
+              </motion.span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-[13px]">
+                  {isUrgent ? `${total - done} habits left — only ${hoursLeft}h remaining!` : `${total - done} habits left today`}
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: isUrgent ? '#fca5a5' : '#fde68a' }}>
+                  {isUrgent ? "Don't break your streak now — you're so close!" : `Complete before midnight to keep your streak 🔥`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Clock size={12} style={{ color: isUrgent ? '#fca5a5' : '#fde68a' }} />
+                <span className="text-[12px] font-bold" style={{ color: isUrgent ? '#fca5a5' : '#fde68a' }}>{hoursLeft}h</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Progress card */}
       <div
@@ -338,9 +389,9 @@ export default function Dashboard() {
               const onFire = stats.currentStreak >= 7;
               return (
                 <div key={habit.id} className="relative">
-                  {/* XP pops anchored to this row */}
+                  {/* XP pops for this specific habit */}
                   <AnimatePresence>
-                    {xpPops.map(pop => (
+                    {xpPops.filter(p => p.habitId === habit.id).map(pop => (
                       <XPPop key={pop.id} xp={pop.xp} onDone={() => setXpPops(p => p.filter(x => x.id !== pop.id))} />
                     ))}
                   </AnimatePresence>
