@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, BarChart3, Trophy, BookOpen } from 'lucide-react';
+import { Home, CheckSquare, Flower2, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// 4 core screens — clean, focused, easy to reach with one thumb
 const NAV = [
-  { href: '/', icon: LayoutDashboard, label: 'Home' },
+  { href: '/', icon: Home, label: 'Home' },
   { href: '/habits', icon: CheckSquare, label: 'Habits' },
+  { href: '/garden', icon: Flower2, label: 'Garden' },
   { href: '/analytics', icon: BarChart3, label: 'Stats' },
-  { href: '/achievements', icon: Trophy, label: 'Awards' },
-  { href: '/journal', icon: BookOpen, label: 'Journal' },
 ];
 
 export default function MobileNav() {
@@ -20,10 +20,10 @@ export default function MobileNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 flex lg:hidden z-30"
       style={{
-        background: 'rgba(11,20,38,0.96)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.07)',
+        background: 'rgba(11,20,38,0.97)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
         paddingBottom: 'var(--safe-bottom)',
       }}
     >
@@ -33,30 +33,30 @@ export default function MobileNav() {
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1 relative tap-scale"
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 relative"
             style={{ minHeight: 'var(--nav-height)' }}
           >
             {active && (
               <motion.div
-                layoutId="activeNavPill"
-                className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full"
-                style={{ width: 32, height: 3, background: '#818cf8' }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                layoutId="activePill"
+                className="absolute top-2 rounded-full"
+                style={{ width: 36, height: 3, background: 'linear-gradient(90deg,#818cf8,#a78bfa)', left: '50%', transform: 'translateX(-50%)' }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
               />
             )}
             <motion.div
-              animate={{ scale: active ? 1.1 : 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              animate={{ scale: active ? 1.15 : 1, y: active ? -1 : 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             >
               <Icon
-                size={22}
+                size={23}
                 strokeWidth={active ? 2.5 : 1.8}
-                style={{ color: active ? '#818cf8' : 'rgba(255,255,255,0.38)' }}
+                style={{ color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)' }}
               />
             </motion.div>
             <span
-              className="text-[10px] font-semibold tracking-wide"
-              style={{ color: active ? '#818cf8' : 'rgba(255,255,255,0.38)' }}
+              className="text-[10px] font-semibold"
+              style={{ color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)' }}
             >
               {label}
             </span>
