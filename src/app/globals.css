@@ -1,11 +1,24 @@
 @import "tailwindcss";
 
+/* ── Brand Variables ────────────────────────────────────── */
+:root {
+  --brand-primary:   #6D28D9;
+  --brand-fire:      #F97316;
+  --brand-glow:      rgba(109,40,217,0.15);
+  --brand-dark:      #0F0D2A;
+  --brand-surface:   #FFFFFF;
+  --nav-height:      64px;
+  --safe-bottom:     env(safe-area-inset-bottom, 0px);
+}
+
 /* ── Base ──────────────────────────────────────────────── */
 body {
-  background: #F0F2F5;
+  background: #F4F3FF;
   color: #0F172A;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Remove blue tap highlight on all elements */
@@ -18,12 +31,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* ── Mobile safe areas ──────────────────────────────────── */
-:root {
-  --nav-height: 64px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* ── Utility ────────────────────────────────────────────── */
 .scrollbar-none {
   scrollbar-width: none;
@@ -31,6 +38,21 @@ html {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Brand gradient text ────────────────────────────────── */
+.brand-text {
+  background: linear-gradient(135deg, #7C3AED, #EC4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.fire-text {
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ── Animations ─────────────────────────────────────────── */
@@ -55,6 +77,16 @@ html {
   100% { opacity: 0; transform: translateY(-28px) scale(0.9); }
 }
 
+@keyframes pulse-brand {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(109,40,217,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(109,40,217,0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
 /* ── Touch feedback ─────────────────────────────────────── */
 .tap-scale {
   transition: transform 0.1s ease, opacity 0.1s ease;
@@ -75,4 +107,17 @@ button, a {
   outline: 2px solid #7c3aed;
   outline-offset: 2px;
   border-radius: 8px;
+}
+
+/* ── Streak card glow ───────────────────────────────────── */
+.streak-card {
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  box-shadow: 0 8px 24px rgba(249,115,22,0.35);
+}
+
+/* ── Brand button shimmer ───────────────────────────────── */
+.btn-brand {
+  background: linear-gradient(270deg, #7C3AED, #4F46E5, #7C3AED);
+  background-size: 300% 100%;
+  animation: shimmer 3s ease infinite;
 }

@@ -6,11 +6,12 @@ import Providers from "./providers";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "Streak",
-  description: "Your personal habit ecosystem",
+  title: "Streak — Build Better Habits",
+  description: "Track habits, earn XP, grow your streak. A gamified habit builder that actually works.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -28,13 +29,13 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0B1426",
+  themeColor: "#0F0D2A",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body className="min-h-screen bg-gray-50 antialiased">
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen antialiased" style={{ fontFamily: 'var(--font-inter, Inter), sans-serif' }}>
         <Providers>{children}</Providers>
       </body>
     </html>
