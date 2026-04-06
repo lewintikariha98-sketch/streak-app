@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { format, subDays } from 'date-fns';
 import {
   Plus, Flame, CheckCircle2, Circle, TrendingUp, TrendingDown,
-  Zap, ArrowUpRight, Wallet, X, ChevronDown,
+  Zap, ArrowUpRight, Wallet, X, Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/contexts/AppContext';
@@ -24,6 +24,98 @@ const EXPENSE_CATS: { value: ExpenseCategory; label: string; icon: string }[] = 
   { value: 'other', label: 'Other', icon: '💸' },
 ];
 
+const MOODS = [
+  { v: 1 as const, emoji: '😞', label: 'Rough', color: '#dc2626' },
+  { v: 2 as const, emoji: '😕', label: 'Meh', color: '#ea580c' },
+  { v: 3 as const, emoji: '😐', label: 'Okay', color: '#ca8a04' },
+  { v: 4 as const, emoji: '😊', label: 'Good', color: '#16a34a' },
+  { v: 5 as const, emoji: '🤩', label: 'Amazing', color: '#7c3aed' },
+];
+
+function ProgressRing({ pct, done, total }: { pct: number; done: number; total: number }) {
+  const size = 140;
+  const strokeW = 11;
+  const r = (size - strokeW) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  const isComplete = pct === 100 && total > 0;
+
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="#f1f5f9" strokeWidth={strokeW} fill="none" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          stroke={`url(#ringGrad${isComplete ? 'Gold' : 'Green'})`}
+          strokeWidth={strokeW} fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circ}`}
+          strokeDashoffset={`${offset}`}
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)' }}
+        />
+        <defs>
+          <linearGradient id="ringGradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#10b981" />
+          </linearGradient>
+          <linearGradient id="ringGradGold" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#f97316" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        {isComplete ? (
+          <span className="text-3xl">🎉</span>
+        ) : (
+          <>
+            <span className="text-[28px] font-black text-slate-900 leading-none">{pct}%</span>
+            <span className="text-[11px] text-slate-400 mt-0.5">{done}/{total}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MoodWidget({ currentMood, onSave }: { currentMood?: number; onSave: (mood: 1 | 2 | 3 | 4 | 5) => void }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const selected = MOODS.find(m => m.v === currentMood);
+
+  if (selected) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">{selected.emoji}</span>
+        <div>
+          <p className="text-[13px] font-semibold text-slate-700">{selected.label}</p>
+          <p className="text-[11px] text-slate-400">Today's mood</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">How are you feeling?</p>
+      <div className="flex items-center gap-1.5">
+        {MOODS.map(m => (
+          <button
+            key={m.v}
+            onClick={() => onSave(m.v)}
+            onMouseEnter={() => setHovered(m.v)}
+            onMouseLeave={() => setHovered(null)}
+            title={m.label}
+            className="text-2xl transition-all duration-150"
+            style={{ transform: hovered === m.v ? 'scale(1.35)' : 'scale(1)' }}
+          >
+            {m.emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StatCard({
   label, value, sub, icon, trend, trendUp, accentColor,
 }: {
@@ -31,9 +123,9 @@ function StatCard({
   trend?: string; trendUp?: boolean; accentColor: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-      <div className="flex items-start justify-between mb-3 sm:mb-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${accentColor}18` }}>
+    <div className="bg-white rounded-2xl p-4" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${accentColor}18` }}>
           <span style={{ color: accentColor }}>{icon}</span>
         </div>
         {trend && (
@@ -46,7 +138,7 @@ function StatCard({
           </span>
         )}
       </div>
-      <p className="text-[24px] sm:text-[30px] font-black text-slate-900 tracking-tight leading-none">{value}</p>
+      <p className="text-[24px] font-black text-slate-900 tracking-tight leading-none">{value}</p>
       <p className="text-[11px] font-semibold text-slate-500 mt-1.5 uppercase tracking-wide">{label}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
@@ -164,34 +256,35 @@ function BudgetSetupModal({ onSave, initial }: { onSave: (n: number) => void; in
   );
 }
 
-const QUOTES = [
-  { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
-  { text: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius" },
-  { text: "The impediment to action advances action. What stands in the way becomes the way.", author: "Marcus Aurelius" },
-  { text: "It is not that I'm so smart. But I stay with the questions much longer.", author: "Albert Einstein" },
-  { text: "The man who moves a mountain begins by carrying away small stones.", author: "Confucius" },
-  { text: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche" },
-  { text: "We suffer more in imagination than in reality.", author: "Seneca" },
-  { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
-  { text: "The first and greatest victory is to conquer yourself.", author: "Plato" },
-  { text: "Don't explain your philosophy. Embody it.", author: "Epictetus" },
-  { text: "It's not what happens to you, but how you react to it that matters.", author: "Epictetus" },
-  { text: "Small deeds done are better than great deeds planned.", author: "Peter Marshall" },
-  { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
-  { text: "The quality of a person's life is in direct proportion to their commitment to excellence.", author: "Vince Lombardi" },
-  { text: "Act well at the moment, and you have performed a good action to all eternity.", author: "Johann Kaspar Lavater" },
-];
-
-function getDailyQuote(): typeof QUOTES[0] {
-  const day = new Date().getDate() + new Date().getMonth() * 31;
-  return QUOTES[day % QUOTES.length];
+function StreakFire({ streak }: { streak: number }) {
+  if (streak >= 14) return (
+    <span className="flex items-center gap-0.5">
+      <span className="text-[13px]">🔥🔥</span>
+      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
+    </span>
+  );
+  if (streak >= 7) return (
+    <span className="flex items-center gap-0.5">
+      <span className="text-[12px]">🔥</span>
+      <span className="text-[11px] font-bold text-orange-500">{streak}d</span>
+    </span>
+  );
+  if (streak >= 3) return (
+    <span className="flex items-center gap-0.5">
+      <Flame size={10} className="text-orange-400" />
+      <span className="text-[11px] text-slate-400">{streak}d</span>
+    </span>
+  );
+  if (streak >= 1) return (
+    <span className="text-[11px] text-slate-400">{streak}d streak</span>
+  );
+  return <span className="text-[11px] text-slate-300">No streak</span>;
 }
 
 export default function Dashboard() {
-  const { data, loaded, toggleCompletion, addHabit, addExpense, deleteExpense, updateDailyBudget } = useApp();
+  const { data, loaded, toggleCompletion, addHabit, addExpense, deleteExpense, updateDailyBudget, addNote } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
-  const quote = getDailyQuote();
 
   if (!loaded) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -199,7 +292,6 @@ export default function Dashboard() {
     </div>
   );
 
-  // Show budget setup if it hasn't been configured yet (still at sentinel value)
   const budgetNotSet = data.dailyBudget === 50 && data.expenses.length === 0;
 
   const activeHabits = data.habits.filter(h => !h.archived);
@@ -216,10 +308,10 @@ export default function Dashboard() {
   const days = getLast7Days();
   const weeklyData = getWeeklyData(activeHabits);
   const xp = getTotalXP(activeHabits);
-  const { level, title } = getLevel(xp);
+  const { level, title, current, required } = getLevel(xp);
+  const xpPct = required > 0 ? Math.round((current / required) * 100) : 0;
   const totalStreak = activeHabits.reduce((acc, h) => acc + getHabitStats(h).currentStreak, 0);
 
-  // Spending
   const todayExpenses = data.expenses.filter(e => e.date === today);
   const todaySpend = todayExpenses.reduce((s, e) => s + e.amount, 0);
   const budgetLeft = data.dailyBudget - todaySpend;
@@ -238,23 +330,29 @@ export default function Dashboard() {
     return 'Good evening';
   })();
 
+  const todayNote = data.notes.find(n => n.date === today);
+  const handleSaveMood = (mood: 1 | 2 | 3 | 4 | 5) => {
+    addNote({ date: today, mood, content: todayNote?.content ?? '' });
+  };
+
+  const perfectDay = doneToday === total && total > 0;
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-5 sm:mb-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[13px] font-semibold text-blue-600 mb-1">{greeting} 👋</p>
+          <p className="text-[13px] font-semibold text-blue-600 mb-0.5">{greeting} 👋</p>
           <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
-            {doneToday === total && total > 0 ? 'Perfect day! 🎉' : 'Dashboard'}
+            {perfectDay ? 'Perfect day! 🎉' : 'Dashboard'}
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-slate-400 mt-1">{format(new Date(), 'EEEE, MMM d')}</p>
+          <p className="text-[12px] text-slate-400 mt-1">{format(new Date(), 'EEEE, MMMM d')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setBudgetModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold border transition-colors hover:bg-white"
             style={{ border: '1px solid #e2e8f0', color: '#475569', background: 'transparent' }}
-            title="Update daily budget"
           >
             <Wallet size={14} /> ₹{data.dailyBudget}
           </button>
@@ -268,48 +366,86 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Daily quote */}
-      <div className="bg-white rounded-2xl px-5 py-4 mb-6 flex items-start gap-3" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
-        <span className="text-xl flex-shrink-0 mt-0.5">💬</span>
-        <div>
-          <p className="text-[13.5px] font-medium text-slate-700 leading-relaxed italic">"{quote.text}"</p>
-          <p className="text-[11px] text-slate-400 mt-1 font-semibold not-italic">— {quote.author}</p>
+      {/* Hero: Progress Ring + Stats */}
+      <div className="bg-white rounded-2xl p-5 mb-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          {/* Ring */}
+          <div className="flex flex-col items-center gap-4 sm:pr-6" style={{ borderRight: '0', }}>
+            <ProgressRing pct={pctToday} done={doneToday} total={total} />
+            <div className="text-center">
+              <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wide">Today's Progress</p>
+              {deltaCompletion !== 0 && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1"
+                  style={{ background: deltaCompletion >= 0 ? '#ecfdf5' : '#fff1f2', color: deltaCompletion >= 0 ? '#059669' : '#dc2626' }}
+                >
+                  {deltaCompletion >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+                  {Math.abs(deltaCompletion)}% vs yesterday
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Vertical divider */}
+          <div className="hidden sm:block w-px self-stretch bg-slate-100 mx-2" />
+
+          {/* Stats grid + Mood */}
+          <div className="flex-1 w-full">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: 'Streak', value: `${totalStreak}d`, icon: '🔥', color: '#f97316' },
+                { label: 'Level', value: `Lv.${level}`, icon: '⚡', color: '#7c3aed', sub: title },
+                { label: 'XP', value: xp.toLocaleString(), icon: '✨', color: '#0891b2' },
+              ].map(s => (
+                <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: `${s.color}0d`, border: `1px solid ${s.color}20` }}>
+                  <span className="text-lg">{s.icon}</span>
+                  <p className="text-[18px] font-black mt-0.5" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{s.label}</p>
+                  {s.sub && <p className="text-[10px] text-slate-400">{s.sub}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* XP bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-[11px] text-slate-400 mb-1.5">
+                <span>Level {level} — {title}</span>
+                <span>{current}/{required} XP</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${xpPct}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className="h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #7c3aed, #a78bfa)' }}
+                />
+              </div>
+            </div>
+
+            {/* Mood */}
+            <MoodWidget currentMood={todayNote?.mood} onSave={handleSaveMood} />
+          </div>
         </div>
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          label="Today's progress"
-          value={`${pctToday}%`}
-          sub={`${doneToday} of ${total} done`}
-          icon={<CheckCircle2 size={20} />}
-          trend={deltaCompletion !== 0 ? `${Math.abs(deltaCompletion)}%` : undefined}
-          trendUp={deltaCompletion >= 0}
-          accentColor="#059669"
-        />
-        <StatCard
-          label="Combined streak"
-          value={`${totalStreak}d`}
-          sub="across all habits"
-          icon={<Flame size={20} />}
-          accentColor="#f97316"
-        />
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <StatCard
           label="Today's spend"
           value={`₹${todaySpend.toFixed(0)}`}
           sub={overBudget ? `₹${Math.abs(budgetLeft).toFixed(0)} over budget` : `₹${budgetLeft.toFixed(0)} left`}
-          icon={<Wallet size={20} />}
+          icon={<Wallet size={18} />}
           trend={overBudget ? 'Over' : 'On track'}
           trendUp={!overBudget}
           accentColor="#0891b2"
         />
         <StatCard
-          label="Level"
-          value={`Lv.${level}`}
-          sub={`${xp} XP · ${title}`}
-          icon={<Zap size={20} />}
-          accentColor="#2563eb"
+          label="Habits done today"
+          value={`${doneToday}/${total}`}
+          sub={total === 0 ? 'Add habits to start' : perfectDay ? 'All done! 🎉' : `${total - doneToday} remaining`}
+          icon={<CheckCircle2 size={18} />}
+          accentColor="#059669"
         />
       </div>
 
@@ -337,7 +473,7 @@ export default function Dashboard() {
                 className="px-4 py-2 text-white text-[13px] font-semibold rounded-xl hover:opacity-90 transition-opacity"
                 style={{ background: '#2563eb' }}
               >
-                Create habit
+                Create first habit
               </button>
             </div>
           ) : (
@@ -347,6 +483,7 @@ export default function Dashboard() {
                   const done = !!habit.completions[today];
                   const stats = getHabitStats(habit);
                   const colors = colorMap[habit.color];
+                  const isOnFire = stats.currentStreak >= 14;
                   return (
                     <motion.div
                       key={habit.id}
@@ -357,21 +494,29 @@ export default function Dashboard() {
                     >
                       <button
                         onClick={() => toggleCompletion(habit.id, today)}
-                        className="flex-shrink-0 transition-all duration-200 p-1 -m-1"
+                        className="flex-shrink-0 transition-all duration-200 p-1 -m-1 active:scale-90"
                         style={{ color: done ? colors.hex : '#e2e8f0' }}
                       >
-                        {done ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                        {done
+                          ? <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}><CheckCircle2 size={22} /></motion.span>
+                          : <Circle size={22} />
+                        }
                       </button>
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{ background: colors.hexLight }}>
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0"
+                        style={{
+                          background: colors.hexLight,
+                          boxShadow: isOnFire ? `0 0 0 2px ${colors.hex}40, 0 0 12px ${colors.hex}30` : undefined,
+                        }}
+                      >
                         {habit.icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`text-[14px] font-semibold ${done ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                           {habit.name}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Flame size={10} className="text-orange-400 flex-shrink-0" />
-                          <span className="text-[11px] text-slate-400">{stats.currentStreak}d streak</span>
+                        <div className="mt-0.5">
+                          <StreakFire streak={stats.currentStreak} />
                         </div>
                       </div>
                       <div className="hidden sm:flex gap-0.5">
@@ -436,6 +581,26 @@ export default function Dashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Quick journal link */}
+          <a
+            href="/journal"
+            className="block bg-white rounded-2xl p-4 hover:shadow-md transition-shadow group"
+            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#f5f3ff' }}>
+                  <Sparkles size={16} style={{ color: '#7c3aed' }} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">Daily Journal</p>
+                  <p className="text-[11px] text-slate-400">{todayNote ? `Mood logged · ${todayNote.content ? 'Note added' : 'Add a note'}` : 'Log your mood & thoughts'}</p>
+                </div>
+              </div>
+              <ArrowUpRight size={14} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
+            </div>
+          </a>
         </div>
       </div>
 
@@ -446,7 +611,6 @@ export default function Dashboard() {
             <h2 className="font-bold text-slate-900 text-[15px]">Today's spending</h2>
             <p className="text-[12px] text-slate-400">{format(new Date(), 'MMM d')} · ₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget}</p>
           </div>
-          {/* Budget bar */}
           <div className="hidden sm:flex items-center gap-2">
             <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -462,11 +626,7 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
-
-        {/* Add row */}
         <AddExpenseRow onAdd={addExpense} />
-
-        {/* Expense list */}
         {todayExpenses.length > 0 && (
           <div className="divide-y divide-slate-50">
             {todayExpenses.slice().reverse().map(expense => {
@@ -477,9 +637,7 @@ export default function Dashboard() {
                     {cat?.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-slate-700">
-                      {expense.note || cat?.label}
-                    </p>
+                    <p className="text-[13px] font-semibold text-slate-700">{expense.note || cat?.label}</p>
                     <p className="text-[11px] text-slate-400">{cat?.label}</p>
                   </div>
                   <span className="font-bold text-[15px] text-slate-900">₹{expense.amount.toFixed(0)}</span>
@@ -494,11 +652,8 @@ export default function Dashboard() {
             })}
           </div>
         )}
-
         {todayExpenses.length === 0 && (
-          <div className="py-8 text-center text-[13px] text-slate-400">
-            No expenses logged today — add one above
-          </div>
+          <div className="py-8 text-center text-[13px] text-slate-400">No expenses logged today — add one above</div>
         )}
       </div>
 
@@ -567,7 +722,6 @@ export default function Dashboard() {
 
       <HabitModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={addHabit} />
 
-      {/* Budget setup modal — shown on first visit */}
       {(budgetNotSet || budgetModalOpen) && (
         <BudgetSetupModal
           initial={data.dailyBudget}

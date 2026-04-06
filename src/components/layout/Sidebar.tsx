@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, CheckSquare, BarChart3, Trophy,
-  Flower2, Zap,
+  Flower2, Zap, BookOpen,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { getTotalXP, getLevel } from '@/lib/stats';
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/garden', icon: Flower2, label: 'Garden' },
   { href: '/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/achievements', icon: Trophy, label: 'Achievements' },
+  { href: '/journal', icon: BookOpen, label: 'Journal' },
 ];
 
 export default function Sidebar() {
@@ -26,6 +27,10 @@ export default function Sidebar() {
   const xp = getTotalXP(activeHabits);
   const { level, current, required, title } = getLevel(xp);
   const pct = required > 0 ? Math.round((current / required) * 100) : 0;
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const doneToday = activeHabits.filter(h => h.completions[today]).length;
+  const total = activeHabits.length;
 
   return (
     <aside
@@ -38,7 +43,6 @@ export default function Sidebar() {
         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
         <div className="flex items-center gap-2.5">
-          {/* S-mark logo */}
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
             <rect width="30" height="30" rx="8" fill="url(#logoGrad)" />
             <defs>
@@ -47,7 +51,6 @@ export default function Sidebar() {
                 <stop offset="1" stopColor="#1D4ED8" />
               </linearGradient>
             </defs>
-            {/* S lettermark */}
             <path
               d="M20 10.5C20 10.5 18 8 15 8C12 8 10 10 10 12.5C10 15 12.5 15.8 15 16.2C17.5 16.6 20 17.5 20 20C20 22.5 17.5 22 15 22C12 22 10 19.5 10 19.5"
               stroke="white"
@@ -60,8 +63,29 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* Today's progress mini */}
+      {total > 0 && (
+        <div className="mx-3 mt-3 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>Today</p>
+            <p className="text-[11px] font-bold text-white">{doneToday}/{total}</p>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${total > 0 ? Math.round((doneToday / total) * 100) : 0}%`,
+                background: doneToday === total && total > 0
+                  ? 'linear-gradient(90deg, #f59e0b, #f97316)'
+                  : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Section label */}
-      <div className="px-5 pt-5 pb-1.5">
+      <div className="px-5 pt-4 pb-1.5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'rgba(255,255,255,0.22)' }}>
           Menu
         </p>
@@ -115,7 +139,7 @@ export default function Sidebar() {
                 <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{title}</p>
               </div>
             </div>
-            <span className="text-[11px] font-semibold text-blue-400">{xp} XP</span>
+            <span className="text-[11px] font-semibold text-blue-400">{xp.toLocaleString()} XP</span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <div

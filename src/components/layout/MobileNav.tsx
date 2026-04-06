@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Flower2, BarChart3, Trophy } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Flower2, BarChart3, Trophy, BookOpen } from 'lucide-react';
 
 const NAV = [
   { href: '/', icon: LayoutDashboard, label: 'Home' },
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/garden', icon: Flower2, label: 'Garden' },
   { href: '/analytics', icon: BarChart3, label: 'Stats' },
   { href: '/achievements', icon: Trophy, label: 'Awards' },
+  { href: '/journal', icon: BookOpen, label: 'Journal' },
 ];
 
 export default function MobileNav() {
@@ -23,10 +24,10 @@ export default function MobileNav() {
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-medium transition-colors"
+            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[9px] font-medium transition-colors"
             style={{ color: active ? '#a78bfa' : 'rgba(255,255,255,0.35)' }}
           >
-            <Icon size={20} />
+            <Icon size={18} />
             {label}
           </Link>
         );

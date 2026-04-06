@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, Search, Filter, MoreHorizontal, Trash2, Archive, Edit3, Flame, Trophy, CheckCircle2, Circle } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Trash2, Archive, Edit3, Flame, Trophy, CheckCircle2, Circle, Wand2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/contexts/AppContext';
 import { getHabitStats, getLast7Days } from '@/lib/stats';
 import { colorMap } from '@/lib/colors';
 import HabitModal from '@/components/habits/HabitModal';
-import { Habit, HabitCategory } from '@/types';
+import { Habit, HabitCategory, HabitColor } from '@/types';
 
 const CATEGORY_LABELS: Record<HabitCategory, string> = {
   health: '🏥 Health',
@@ -22,6 +22,32 @@ const CATEGORY_LABELS: Record<HabitCategory, string> = {
   custom: '✨ Custom',
 };
 
+interface Template {
+  name: string;
+  description: string;
+  icon: string;
+  color: HabitColor;
+  category: HabitCategory;
+  targetDays: number;
+}
+
+const TEMPLATES: Template[] = [
+  { name: 'Morning Meditation', description: 'Clear your mind before the day begins', icon: '🧘', color: 'violet', category: 'mindfulness', targetDays: 7 },
+  { name: 'Read 30 Minutes', description: 'Expand your knowledge daily', icon: '📚', color: 'blue', category: 'learning', targetDays: 5 },
+  { name: 'Strength Training', description: 'Build strength and endurance', icon: '💪', color: 'orange', category: 'fitness', targetDays: 4 },
+  { name: 'Drink 8 Glasses of Water', description: 'Stay hydrated throughout the day', icon: '💧', color: 'cyan', category: 'health', targetDays: 7 },
+  { name: 'Daily Journaling', description: 'Reflect and capture your thoughts', icon: '✍️', color: 'amber', category: 'productivity', targetDays: 7 },
+  { name: 'Eat Healthy', description: 'Choose nutritious foods each day', icon: '🥗', color: 'emerald', category: 'nutrition', targetDays: 7 },
+  { name: 'Cold Shower', description: 'Build mental toughness daily', icon: '🚿', color: 'teal', category: 'health', targetDays: 5 },
+  { name: 'Gratitude Practice', description: "Write 3 things you're grateful for", icon: '❤️', color: 'rose', category: 'mindfulness', targetDays: 7 },
+  { name: 'Learn Something New', description: 'Dedicate time to a new skill', icon: '🎯', color: 'indigo', category: 'learning', targetDays: 5 },
+  { name: 'No Social Media', description: 'Focus and reclaim your attention', icon: '🔕', color: 'rose', category: 'productivity', targetDays: 7 },
+  { name: 'Evening Walk', description: 'Wind down with a 20-min walk', icon: '🌅', color: 'amber', category: 'fitness', targetDays: 5 },
+  { name: 'Save Money', description: 'Track and save a little each day', icon: '💰', color: 'emerald', category: 'finance', targetDays: 7 },
+];
+
+type SortKey = 'name' | 'streak' | 'rate' | 'added';
+
 export default function HabitsPage() {
   const { data, loaded, toggleCompletion, addHabit, updateHabit, deleteHabit, archiveHabit } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,16 +56,26 @@ export default function HabitsPage() {
   const [filterCat, setFilterCat] = useState<HabitCategory | 'all'>('all');
   const [menuId, setMenuId] = useState<string | null>(null);
   const [view, setView] = useState<'active' | 'archived'>('active');
+  const [sortKey, setSortKey] = useState<SortKey>('added');
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const days = getLast7Days();
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  const habits = data.habits.filter(h => {
+  let habits = data.habits.filter(h => {
     if (view === 'active' && h.archived) return false;
     if (view === 'archived' && !h.archived) return false;
     if (filterCat !== 'all' && h.category !== filterCat) return false;
     if (search && !h.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
+  });
+
+  // Sort
+  habits = [...habits].sort((a, b) => {
+    if (sortKey === 'name') return a.name.localeCompare(b.name);
+    if (sortKey === 'streak') return getHabitStats(b).currentStreak - getHabitStats(a).currentStreak;
+    if (sortKey === 'rate') return getHabitStats(b).completionRate30 - getHabitStats(a).completionRate30;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const handleEdit = (habit: Habit) => {
@@ -48,13 +84,18 @@ export default function HabitsPage() {
     setMenuId(null);
   };
 
-  const handleSave = (data: Omit<Habit, 'id' | 'completions' | 'notes' | 'createdAt' | 'archived'>) => {
+  const handleSave = (d: Omit<Habit, 'id' | 'completions' | 'notes' | 'createdAt' | 'archived'>) => {
     if (editingHabit) {
-      updateHabit(editingHabit.id, data);
+      updateHabit(editingHabit.id, d);
       setEditingHabit(undefined);
     } else {
-      addHabit(data);
+      addHabit(d);
     }
+  };
+
+  const handleAddTemplate = (t: Template) => {
+    addHabit({ name: t.name, description: t.description, icon: t.icon, color: t.color, category: t.category, targetDays: t.targetDays });
+    setShowTemplates(false);
   };
 
   if (!loaded) {
@@ -64,6 +105,7 @@ export default function HabitsPage() {
   }
 
   const categories = [...new Set(data.habits.map(h => h.category))];
+  const activeCount = data.habits.filter(h => !h.archived).length;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-4xl">
@@ -75,17 +117,71 @@ export default function HabitsPage() {
             {data.habits.filter(h => !h.archived).length} active · {data.habits.filter(h => h.archived).length} archived
           </p>
         </div>
-        <button
-          onClick={() => { setEditingHabit(undefined); setModalOpen(true); }}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 min-h-[44px] bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-        >
-          <Plus size={16} /> <span className="hidden sm:inline">New habit</span><span className="sm:hidden">Add</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplates(!showTemplates)}
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold border transition-colors hover:bg-white"
+            style={{ border: '1px solid #e2e8f0', color: '#7c3aed', background: '#f5f3ff' }}
+          >
+            <Wand2 size={14} /> Templates
+          </button>
+          <button
+            onClick={() => { setEditingHabit(undefined); setModalOpen(true); }}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+          >
+            <Plus size={16} /> <span className="hidden sm:inline">New habit</span><span className="sm:hidden">Add</span>
+          </button>
+        </div>
       </div>
 
+      {/* Templates panel */}
+      <AnimatePresence>
+        {showTemplates && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-5 overflow-hidden"
+          >
+            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-100 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-gray-900">Quick-Start Templates</h3>
+                  <p className="text-[12px] text-gray-500 mt-0.5">Click any to add it instantly</p>
+                </div>
+                <button onClick={() => setShowTemplates(false)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {TEMPLATES.map((t, i) => {
+                  const colors = colorMap[t.color];
+                  const alreadyAdded = data.habits.some(h => h.name === t.name && !h.archived);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => !alreadyAdded && handleAddTemplate(t)}
+                      disabled={alreadyAdded}
+                      className="flex items-center gap-2.5 p-3 rounded-xl text-left transition-all hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: alreadyAdded ? '#f9fafb' : 'white', border: `1px solid ${alreadyAdded ? '#e5e7eb' : colors.hexLight}` }}
+                    >
+                      <span className="text-xl flex-shrink-0">{t.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-gray-800 truncate">{t.name}</p>
+                        <p className="text-[10px] text-gray-400">{t.targetDays}× /week</p>
+                      </div>
+                      {alreadyAdded && <span className="text-[10px] text-green-500 font-semibold ml-auto">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Filters row */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {/* Search */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -96,8 +192,6 @@ export default function HabitsPage() {
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
           />
         </div>
-
-        {/* View toggle */}
         <div className="flex items-center bg-gray-100 rounded-xl p-1">
           {(['active', 'archived'] as const).map(v => (
             <button
@@ -111,6 +205,17 @@ export default function HabitsPage() {
             </button>
           ))}
         </div>
+        {/* Sort */}
+        <select
+          value={sortKey}
+          onChange={e => setSortKey(e.target.value as SortKey)}
+          className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-[12px] text-gray-600 outline-none focus:ring-2 focus:ring-violet-400"
+        >
+          <option value="added">Sort: Recently added</option>
+          <option value="streak">Sort: Streak</option>
+          <option value="rate">Sort: Completion rate</option>
+          <option value="name">Sort: Name</option>
+        </select>
       </div>
 
       {/* Category pills */}
@@ -146,15 +251,23 @@ export default function HabitsPage() {
             {view === 'archived' ? 'No archived habits' : search ? 'No habits found' : 'No habits yet'}
           </p>
           <p className="text-sm text-gray-400 mb-5">
-            {view === 'active' && !search && 'Build your first habit to get started'}
+            {view === 'active' && !search && 'Start with a template or create your own'}
           </p>
           {view === 'active' && !search && (
-            <button
-              onClick={() => { setEditingHabit(undefined); setModalOpen(true); }}
-              className="px-5 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors"
-            >
-              Create habit
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="px-5 py-2.5 bg-violet-50 text-violet-700 text-sm font-semibold rounded-xl hover:bg-violet-100 transition-colors border border-violet-200"
+              >
+                Browse templates
+              </button>
+              <button
+                onClick={() => { setEditingHabit(undefined); setModalOpen(true); }}
+                className="px-5 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors"
+              >
+                Create custom
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -164,6 +277,7 @@ export default function HabitsPage() {
               const stats = getHabitStats(habit);
               const colors = colorMap[habit.color];
               const done = !!habit.completions[today];
+              const isOnFire = stats.currentStreak >= 7;
               return (
                 <motion.div
                   key={habit.id}
@@ -174,26 +288,24 @@ export default function HabitsPage() {
                   transition={{ delay: i * 0.03 }}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  {/* Top accent bar */}
                   <div className={`h-1 bg-gradient-to-r ${colors.gradient}`} />
-
                   <div className="p-5">
                     <div className="flex items-start gap-4">
-                      {/* Check + Icon */}
                       <div className="flex items-center gap-2.5 flex-shrink-0">
                         <button
                           onClick={() => toggleCompletion(habit.id, today)}
                           className={`transition-all ${done ? colors.text : 'text-gray-200 hover:text-gray-400'}`}
-                          title={done ? 'Mark incomplete' : 'Mark complete'}
                         >
                           {done ? <CheckCircle2 size={22} /> : <Circle size={22} />}
                         </button>
-                        <div className={`w-11 h-11 ${colors.bgLight} rounded-2xl flex items-center justify-center text-2xl`}>
+                        <div
+                          className={`w-11 h-11 ${colors.bgLight} rounded-2xl flex items-center justify-center text-2xl`}
+                          style={isOnFire ? { boxShadow: `0 0 0 2px ${colors.hex}30, 0 0 16px ${colors.hex}20` } : {}}
+                        >
                           {habit.icon}
                         </div>
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
@@ -211,7 +323,6 @@ export default function HabitsPage() {
                             </div>
                           </div>
 
-                          {/* Menu */}
                           <div className="relative flex-shrink-0">
                             <button
                               onClick={() => setMenuId(menuId === habit.id ? null : habit.id)}
@@ -276,7 +387,11 @@ export default function HabitsPage() {
                         {/* Stats row */}
                         <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50">
                           <div className="flex items-center gap-1">
-                            <Flame size={12} className="text-orange-400" />
+                            {stats.currentStreak >= 7 ? (
+                              <span className="text-sm">🔥</span>
+                            ) : (
+                              <Flame size={12} className="text-orange-400" />
+                            )}
                             <span className="text-xs text-gray-600 font-medium">{stats.currentStreak}</span>
                             <span className="text-xs text-gray-400">streak</span>
                           </div>
@@ -291,10 +406,7 @@ export default function HabitsPage() {
                           </div>
                           <div className="ml-auto flex items-center gap-2">
                             <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${colors.bg} rounded-full`}
-                                style={{ width: `${stats.completionRate30}%` }}
-                              />
+                              <div className={`h-full ${colors.bg} rounded-full`} style={{ width: `${stats.completionRate30}%` }} />
                             </div>
                             <span className={`text-xs font-semibold ${colors.text}`}>{stats.completionRate30}%</span>
                           </div>

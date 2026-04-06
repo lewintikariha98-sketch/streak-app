@@ -7,6 +7,7 @@ import { useApp } from '@/contexts/AppContext';
 import { getHabitStats, getMonthlyData, getLast52Weeks } from '@/lib/stats';
 import { colorMap } from '@/lib/colors';
 import { Habit } from '@/types';
+import { Trophy, TrendingUp, Zap, Target } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -27,9 +28,7 @@ function HeatmapCalendar({ habit }: { habit: Habit }) {
                 <div
                   key={date}
                   title={date}
-                  className={`w-3 h-3 rounded-sm transition-colors ${
-                    done ? colors.bg : 'bg-gray-100'
-                  }`}
+                  className={`w-3 h-3 rounded-sm transition-colors ${done ? colors.bg : 'bg-gray-100'}`}
                 />
               );
             })}
@@ -40,6 +39,20 @@ function HeatmapCalendar({ habit }: { habit: Habit }) {
         <span>{format(subDays(new Date(), 364), 'MMM yyyy')}</span>
         <span>{format(new Date(), 'MMM yyyy')}</span>
       </div>
+    </div>
+  );
+}
+
+function RecordCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string; sub?: string; color: string }) {
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: `${color}0d`, border: `1px solid ${color}20` }}
+    >
+      <span className="text-2xl mb-2 block">{icon}</span>
+      <p className="text-[22px] font-black" style={{ color }}>{value}</p>
+      <p className="text-[12px] font-semibold text-slate-600 mt-0.5">{label}</p>
+      {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -79,6 +92,33 @@ export default function AnalyticsPage() {
     });
   })();
 
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Personal records
+  const allStats = activeHabits.map(h => ({ h, s: getHabitStats(h) }));
+  const bestStreakEntry = allStats.reduce((best, cur) => cur.s.longestStreak > best.s.longestStreak ? cur : best, allStats[0] ?? { h: null, s: { longestStreak: 0, currentStreak: 0, completionRate30: 0, totalCompletions: 0, weeklyRate: 0 } });
+  const mostConsistentEntry = allStats.reduce((best, cur) => cur.s.completionRate30 > best.s.completionRate30 ? cur : best, allStats[0] ?? { h: null, s: { longestStreak: 0, currentStreak: 0, completionRate30: 0, totalCompletions: 0, weeklyRate: 0 } });
+  const totalDone = allStats.reduce((sum, { s }) => sum + s.totalCompletions, 0);
+  const avgRate = allStats.length > 0 ? Math.round(allStats.reduce((sum, { s }) => sum + s.completionRate30, 0) / allStats.length) : 0;
+
+  // Insights
+  const insights: string[] = [];
+  if (activeHabits.length > 0) {
+    const bestDay = dayOfWeekData.reduce((best, d) => d.rate > best.rate ? d : best, dayOfWeekData[0]);
+    const worstDay = dayOfWeekData.reduce((worst, d) => d.rate < worst.rate ? d : worst, dayOfWeekData[0]);
+    if (bestDay.rate > 0) insights.push(`${bestDay.day}s are your strongest day (${bestDay.rate}% completion rate)`);
+    if (worstDay.rate < bestDay.rate && worstDay.rate < 50) insights.push(`${worstDay.day}s are your toughest day — consider lighter goals`);
+    if (avgRate >= 80) insights.push("You're in the top tier — above 80% average is exceptional");
+    if (avgRate >= 50 && avgRate < 80) insights.push("Solid consistency. Push for 80%+ to unlock new levels fast");
+    if (bestStreakEntry.s.longestStreak >= 30) insights.push(`${bestStreakEntry.h?.name} has your all-time best streak — keep protecting it`);
+    const hotHabits = activeHabits.filter(h => getHabitStats(h).currentStreak >= 7);
+    if (hotHabits.length > 0) insights.push(`${hotHabits.length} habit${hotHabits.length > 1 ? 's are' : ' is'} on a 7+ day streak — you're in a flow state`);
+    const overdueHabits = activeHabits.filter(h => !h.completions[today]);
+    if (overdueHabits.length > 0 && overdueHabits.length < activeHabits.length) {
+      insights.push(`${overdueHabits.length} habit${overdueHabits.length > 1 ? 's still need' : ' still needs'} attention today`);
+    }
+  }
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
       <div className="mb-6 sm:mb-8">
@@ -94,10 +134,77 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="space-y-6">
+
+          {/* Personal Records */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy size={16} className="text-amber-500" />
+              <h2 className="font-semibold text-gray-900">Personal Records</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <RecordCard
+                icon="🏆"
+                label="Best Streak Ever"
+                value={`${bestStreakEntry.s.longestStreak}d`}
+                sub={bestStreakEntry.h?.name}
+                color="#f59e0b"
+              />
+              <RecordCard
+                icon="✅"
+                label="Total Completions"
+                value={totalDone.toLocaleString()}
+                sub="all time"
+                color="#059669"
+              />
+              <RecordCard
+                icon="📊"
+                label="Avg 30-day Rate"
+                value={`${avgRate}%`}
+                sub="across habits"
+                color="#7c3aed"
+              />
+              <RecordCard
+                icon="🔥"
+                label="Most Consistent"
+                value={`${mostConsistentEntry.s.completionRate30}%`}
+                sub={mostConsistentEntry.h?.name}
+                color="#ea580c"
+              />
+            </div>
+          </motion.div>
+
+          {/* Insights */}
+          {insights.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-gradient-to-br from-violet-50 to-blue-50 rounded-2xl border border-violet-100 p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={15} className="text-violet-500" />
+                <h2 className="font-semibold text-gray-900">Smart Insights</h2>
+              </div>
+              <div className="space-y-2">
+                {insights.map((insight, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-1.5 flex-shrink-0" />
+                    <p className="text-[13px] text-slate-700">{insight}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* 30-day overview */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
           >
             <h2 className="font-semibold text-gray-900 mb-1">30-Day Completion Rate</h2>
@@ -110,36 +217,23 @@ export default function AnalyticsPage() {
                     <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
-                  tickLine={false}
-                  axisLine={false}
-                  interval={4}
-                />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} interval={4} />
                 <YAxis hide domain={[0, 100]} />
                 <Tooltip
                   contentStyle={{ background: 'white', border: '1px solid #f3f4f6', borderRadius: '12px', fontSize: 12 }}
                   formatter={(v) => [`${v}%`, 'Completion']}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="rate"
-                  stroke="#7c3aed"
-                  strokeWidth={2.5}
-                  fill="url(#grad)"
-                  dot={false}
-                />
+                <Area type="monotone" dataKey="rate" stroke="#7c3aed" strokeWidth={2.5} fill="url(#grad)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Best days of week */}
+            {/* Best days */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.15 }}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
             >
               <h2 className="font-semibold text-gray-900 mb-1">Best Days</h2>
@@ -165,11 +259,11 @@ export default function AnalyticsPage() {
             </motion.div>
 
             {/* Habit radar */}
-            {activeHabits.length >= 3 && (
+            {activeHabits.length >= 3 ? (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
+                transition={{ delay: 0.2 }}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
               >
                 <h2 className="font-semibold text-gray-900 mb-1">Habit Balance</h2>
@@ -182,6 +276,17 @@ export default function AnalyticsPage() {
                   </RadarChart>
                 </ResponsiveContainer>
               </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-center justify-center text-center"
+              >
+                <Target size={28} className="text-gray-300 mb-3" />
+                <p className="font-semibold text-gray-500 text-sm">Habit Balance</p>
+                <p className="text-xs text-gray-400 mt-1">Add 3+ habits to see your radar chart</p>
+              </motion.div>
             )}
           </div>
 
@@ -189,10 +294,13 @@ export default function AnalyticsPage() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
           >
-            <h2 className="font-semibold text-gray-900 mb-4">Per-Habit Breakdown</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp size={15} className="text-violet-500" />
+              <h2 className="font-semibold text-gray-900">Per-Habit Breakdown</h2>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {activeHabits.map(h => {
                 const colors = colorMap[h.color];
@@ -220,7 +328,7 @@ export default function AnalyticsPage() {
                     { label: 'Current Streak', value: `${getHabitStats(habit).currentStreak}d` },
                     { label: 'Best Streak', value: `${getHabitStats(habit).longestStreak}d` },
                     { label: '30-day Rate', value: `${getHabitStats(habit).completionRate30}%` },
-                    { label: 'Total Done', value: String(getHabitStats(habit).totalCompletions) },
+                    { label: 'Total Done', value: getHabitStats(habit).totalCompletions.toLocaleString() },
                   ].map(s => (
                     <div key={s.label} className={`${colorMap[habit.color].bgLighter} rounded-xl p-3`}>
                       <p className={`text-2xl font-bold ${colorMap[habit.color].text}`}>{s.value}</p>
