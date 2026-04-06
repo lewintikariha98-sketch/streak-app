@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, CheckSquare, BarChart3, Trophy,
-  Flower2, BookOpen,
+  PawPrint, BookOpen,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { getTotalXP, getLevel } from '@/lib/stats';
@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 const NAV = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/habits', icon: CheckSquare, label: 'Habits' },
-  { href: '/garden', icon: Flower2, label: 'Garden' },
+  { href: '/garden', icon: PawPrint, label: 'Pet' },
   { href: '/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/achievements', icon: Trophy, label: 'Achievements' },
   { href: '/journal', icon: BookOpen, label: 'Journal' },

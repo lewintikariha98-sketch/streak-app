@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, CheckSquare, Flower2, BarChart3, BookOpen } from 'lucide-react';
+import { Home, CheckSquare, PawPrint, BarChart3, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // 5 core screens — thumb-reachable, iconic
 const NAV = [
   { href: '/', icon: Home, label: 'Home' },
   { href: '/habits', icon: CheckSquare, label: 'Habits' },
-  { href: '/garden', icon: Flower2, label: 'Garden' },
+  { href: '/garden', icon: PawPrint, label: 'Pet' },
   { href: '/analytics', icon: BarChart3, label: 'Stats' },
   { href: '/journal', icon: BookOpen, label: 'Journal' },
 ];
