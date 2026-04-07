@@ -97,21 +97,24 @@ function ProgressRing({ pct, done, total }: { pct: number; done: number; total: 
 }
 
 export default function Dashboard() {
-  const { data, loaded, toggleCompletion, addHabit, addExpense, deleteExpense, updateDailyBudget, addNote } = useApp();
+  const { data, loaded, toggleCompletion, addHabit, addExpense, deleteExpense, updateDailyBudget, addNote, updateUserName } = useApp();
   const { pushToast, triggerConfetti } = useNotifications();
   const [modalOpen, setModalOpen] = useState(false);
   const [showSpend, setShowSpend] = useState(false);
   const [spendAmount, setSpendAmount] = useState('');
   const [spendCat, setSpendCat] = useState<ExpenseCategory>('food');
   const [xpPops, setXpPops] = useState<{ id: string; xp: number; habitId: string }[]>([]);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   if (!loaded) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const displayName = data.userName && data.userName !== 'You' ? data.userName : null;
   const activeHabits = data.habits.filter(h => !h.archived);
   const done = activeHabits.filter(h => h.completions[today]).length;
   const total = activeHabits.length;
@@ -170,16 +173,39 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="text-[12px] font-semibold text-blue-500 uppercase tracking-wide">{greeting} 👋</p>
-          <h1 className="text-[22px] font-black text-slate-900 tracking-tight mt-0.5">
-            {perfect ? 'Perfect day!' : 'Today'}
-          </h1>
+          <p className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#7C3AED' }}>
+            {greeting} 👋
+          </p>
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onBlur={() => { const n = nameInput.trim(); if (n) updateUserName(n); setEditingName(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') { const n = nameInput.trim(); if (n) updateUserName(n); setEditingName(false); } }}
+              placeholder="Your name..."
+              className="text-[22px] font-black text-slate-900 tracking-tight mt-0.5 bg-transparent border-b-2 outline-none w-40"
+              style={{ borderColor: '#7C3AED' }}
+            />
+          ) : (
+            <button
+              onClick={() => { setNameInput(data.userName === 'You' ? '' : data.userName); setEditingName(true); }}
+              className="flex items-center gap-1.5 mt-0.5 group"
+            >
+              <h1 className="text-[22px] font-black text-slate-900 tracking-tight">
+                {perfect ? '🎉 Perfect!' : displayName ? `Hey, ${displayName}` : 'Today'}
+              </h1>
+              {!displayName && (
+                <span className="text-[11px] text-violet-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">set name</span>
+              )}
+            </button>
+          )}
         </div>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setModalOpen(true)}
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg"
-          style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
+          style={{ background: 'linear-gradient(135deg,#7C3AED,#4f46e5)', boxShadow: '0 4px 14px rgba(124,58,237,0.4)' }}
         >
           <Plus size={20} />
         </motion.button>
@@ -342,9 +368,9 @@ export default function Dashboard() {
             <motion.div
               whileTap={{ scale: 0.95 }}
               className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold text-[14px] rounded-2xl"
-              style={{ background: 'linear-gradient(135deg,#059669,#10b981)' }}
+              style={{ background: 'linear-gradient(135deg,#7C3AED,#4F46E5)' }}
             >
-              See your garden <ArrowRight size={16} />
+              See Pet 🐾 <ArrowRight size={16} />
             </motion.div>
           </a>
           {/* Tap any habit to uncheck */}
@@ -387,6 +413,7 @@ export default function Dashboard() {
               const stats = getHabitStats(habit);
               const colors = colorMap[habit.color];
               const onFire = stats.currentStreak >= 7;
+              const atRisk = stats.currentStreak > 0 && !isDone;
               return (
                 <div key={habit.id} className="relative">
                   {/* XP pops for this specific habit */}
@@ -437,7 +464,7 @@ export default function Dashboard() {
                       >
                         {habit.name}
                       </p>
-                      <div className="flex items-center gap-1 mt-0.5">
+                      <div className="flex items-center gap-1.5 mt-0.5">
                         {stats.currentStreak >= 7 ? (
                           <span className="text-[11px] font-bold text-orange-500">🔥🔥 {stats.currentStreak}d streak</span>
                         ) : stats.currentStreak >= 3 ? (
@@ -446,6 +473,11 @@ export default function Dashboard() {
                           <span className="text-[11px] text-slate-400">{stats.currentStreak}d streak</span>
                         ) : (
                           <span className="text-[11px] text-slate-300">Start your streak</span>
+                        )}
+                        {atRisk && (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full" style={{ background: '#FEF3C7', color: '#D97706' }}>
+                            at risk ⚠️
+                          </span>
                         )}
                       </div>
                     </div>
@@ -505,7 +537,7 @@ export default function Dashboard() {
             <div className="text-left">
               <p className="text-[13px] font-bold text-slate-800">Spending</p>
               <p className="text-[11px]" style={{ color: overBudget ? '#dc2626' : '#64748b' }}>
-                ₹{todaySpend.toFixed(0)} of ₹{data.dailyBudget} {overBudget ? '· over budget ⚠️' : ''}
+                ${todaySpend.toFixed(0)} of ${data.dailyBudget} {overBudget ? '· over budget ⚠️' : ''}
               </p>
             </div>
           </div>
@@ -536,7 +568,7 @@ export default function Dashboard() {
               {/* Add expense */}
               <div className="px-4 pb-4 flex gap-2" style={{ borderTop: '1px solid #f8fafc', paddingTop: 12 }}>
                 <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-3 py-3 flex-1">
-                  <span className="text-sm text-slate-400">₹</span>
+                  <span className="text-sm text-slate-400">$</span>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -573,7 +605,7 @@ export default function Dashboard() {
                       <div key={exp.id} className="flex items-center gap-3 px-4 py-2.5">
                         <span className="text-lg">{cat?.icon}</span>
                         <span className="flex-1 text-[13px] text-slate-600 truncate">{exp.note || cat?.label}</span>
-                        <span className="font-bold text-[13px] text-slate-800">₹{exp.amount.toFixed(0)}</span>
+                        <span className="font-bold text-[13px] text-slate-800">${exp.amount.toFixed(0)}</span>
                         <motion.button whileTap={{ scale: 0.85 }} onClick={() => deleteExpense(exp.id)} className="text-slate-300 hover:text-red-400 p-1">
                           <X size={13} />
                         </motion.button>
@@ -585,6 +617,36 @@ export default function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Journal quick-entry CTA — only if not yet journaled today */}
+      {!todayNote?.content && (
+        <motion.a
+          href="/journal"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="block rounded-3xl overflow-hidden mb-4"
+          style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)', boxShadow: '0 4px 20px rgba(99,102,241,0.2)' }}
+        >
+          <div className="px-5 py-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: 'rgba(167,139,250,0.15)' }}>
+              📖
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-[14px] leading-tight">Write today's reflection</p>
+              <p className="text-[12px] mt-0.5" style={{ color: 'rgba(167,139,250,0.7)' }}>Journal not done yet — takes 1 min</p>
+            </div>
+            <ArrowRight size={16} style={{ color: 'rgba(167,139,250,0.6)', flexShrink: 0 }} />
+          </div>
+        </motion.a>
+      )}
+
+      {/* Version badge */}
+      <div className="flex justify-center pb-6">
+        <span className="text-[11px] font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.08)', color: 'rgba(124,58,237,0.5)' }}>
+          Streak v30
+        </span>
       </div>
 
       <HabitModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={addHabit} />

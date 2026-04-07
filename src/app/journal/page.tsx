@@ -1,42 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { format, subDays } from 'date-fns';
+import { useState, useEffect, useRef } from 'react';
+import { format, subDays, differenceInDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronDown, BookOpen, RefreshCw, Download } from 'lucide-react';
+import { BookOpen, Download, Sparkles, Flame, ChevronDown } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 
-const NAVAL_QUOTES = [
-  { text: "You will get rich by giving society what it wants but does not yet know how to get. At scale.", cat: "Wealth" },
-  { text: "Seek wealth, not money or status. Wealth is having assets that earn while you sleep.", cat: "Wealth" },
-  { text: "Play long-term games with long-term people.", cat: "Thinking" },
-  { text: "Read what you love until you love to read.", cat: "Learning" },
-  { text: "The secret to doing good research is always to be a little underemployed. You waste years by not being able to waste hours.", cat: "Productivity" },
-  { text: "All the real benefits in life come from compound interest.", cat: "Wealth" },
-  { text: "Specific knowledge is knowledge you cannot be trained for. If society can train you, it can train someone else and replace you.", cat: "Career" },
-  { text: "Arm yourself with specific knowledge, accountability, and leverage.", cat: "Career" },
-  { text: "A busy mind accelerates the perceived passage of time. Meditation slows it down.", cat: "Mind" },
-  { text: "To make money, you must have equity — a piece of a business. Give society what it wants but cannot get elsewhere.", cat: "Wealth" },
-  { text: "Free time is the enemy of the young.", cat: "Productivity" },
-  { text: "The greatest superpower is the ability to change yourself.", cat: "Growth" },
-  { text: "Courage isn't the absence of fear. It's acting in the face of fear.", cat: "Mind" },
-  { text: "If you can't decide, the answer is no.", cat: "Decisions" },
-  { text: "Be present above all else.", cat: "Mind" },
-  { text: "Judge yourself by your internal scorecard, not an external one.", cat: "Mind" },
-  { text: "What you do, who you do it with, and how you do it — these are the important decisions.", cat: "Life" },
-  { text: "The modern mind is overstimulated and the modern body is understimulated.", cat: "Health" },
-  { text: "My one measure of success is: how long does it take me to get what I want?", cat: "Success" },
-  { text: "Desire is a contract you make with yourself to be unhappy until you get what you want.", cat: "Mind" },
-  { text: "Earn with your mind, not your time.", cat: "Wealth" },
-  { text: "Set and enforce an aspirational personal hourly rate.", cat: "Productivity" },
-  { text: "If you're not willing to own a stock for ten years, don't even think about owning it for ten minutes.", cat: "Investing" },
-  { text: "The best relationships are where you forget to keep score.", cat: "Relationships" },
-  { text: "Peace of mind is the reward for a life lived in alignment with your values.", cat: "Life" },
-  { text: "Working hard is not enough. You also have to work on the right things.", cat: "Productivity" },
-  { text: "A fit body, a calm mind, a house full of love. These things cannot be bought — they must be earned.", cat: "Life" },
-  { text: "Most of our suffering comes from avoidance.", cat: "Mind" },
-  { text: "To be honest with the world, first be honest with yourself.", cat: "Values" },
-  { text: "Nailing 'when to work on what' is more important than nailing any task.", cat: "Productivity" },
+const DAILY_PROMPTS = [
+  "What's one thing you're genuinely proud of today? Big or small.",
+  "What drained your energy today — and how can you protect yourself from it tomorrow?",
+  "Describe your mood in 3 words. What caused it?",
+  "What would make tomorrow 10% better than today?",
+  "Name someone who helped you recently. What did they do?",
+  "What's one thing you've been avoiding that you know you should do?",
+  "If today had a title, what would it be?",
+  "What habit are you most happy you stuck to this week?",
+  "What's a small win you almost forgot to appreciate?",
+  "Write one thing you're grateful for that you usually take for granted.",
+  "What did you learn today — about the world, yourself, or someone else?",
+  "If your future self could leave you a note right now, what would it say?",
+  "What's been on your mind that you haven't talked about yet?",
+  "Describe your perfect tomorrow. What would it look like?",
 ];
 
 const MOOD_OPTIONS = [
@@ -47,6 +31,21 @@ const MOOD_OPTIONS = [
   { v: 5 as const, emoji: '🤩', label: 'Amazing', color: '#7c3aed', bg: '#f5f3ff' },
 ];
 
+function getJournalStreak(notes: { date: string }[]): number {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const dates = new Set(notes.map(n => n.date));
+  let streak = 0;
+  const startOffset = dates.has(today) ? 0 : 1;
+  let i = 0;
+  while (true) {
+    const date = format(subDays(new Date(), startOffset + i), 'yyyy-MM-dd');
+    if (!dates.has(date)) break;
+    streak++;
+    i++;
+  }
+  return streak;
+}
+
 function MoodDot({ mood }: { mood: number }) {
   const m = MOOD_OPTIONS.find(o => o.v === mood);
   if (!m) return <span className="text-base">😐</span>;
@@ -56,20 +55,17 @@ function MoodDot({ mood }: { mood: number }) {
 export default function JournalPage() {
   const { data, loaded, addNote } = useApp();
   const today = format(new Date(), 'yyyy-MM-dd');
-
   const todayNote = data.notes.find(n => n.date === today);
-  const [mood, setMood] = useState<1 | 2 | 3 | 4 | 5>(todayNote?.mood ?? 3);
+
+  const [mood, setMood] = useState<1|2|3|4|5>(todayNote?.mood ?? 3);
   const [content, setContent] = useState(todayNote?.content ?? '');
-  const [saved, setSaved] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [moodFilter, setMoodFilter] = useState<number | null>(null);
-  const [quoteIdx, setQuoteIdx] = useState(() => {
-    const start = new Date(new Date().getFullYear(), 0, 0);
-    const diff = new Date().getTime() - start.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24)) % NAVAL_QUOTES.length;
-  });
-  const [showAllQuotes, setShowAllQuotes] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(!todayNote?.content);
+  const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sync when todayNote loads/changes
   useEffect(() => {
     if (todayNote) {
       setMood(todayNote.mood);
@@ -77,25 +73,46 @@ export default function JournalPage() {
     }
   }, [todayNote?.mood, todayNote?.content]);
 
-  const handleSave = () => {
-    addNote({ date: today, mood, content: content.trim() });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
+  // Auto-save 1.5s after user stops typing
+  useEffect(() => {
+    if (!content && !mood) return;
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      addNote({ date: today, mood, content: content.trim() });
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 2000);
+    }, 1500);
+    return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
+  }, [content, mood]);
+
+  const journalStreak = getJournalStreak(data.notes);
+
+  // Daily prompt — rotates by day of year
+  const dayOfYear = differenceInDays(new Date(), new Date(new Date().getFullYear(), 0, 0));
+  const todayPrompt = DAILY_PROMPTS[dayOfYear % DAILY_PROMPTS.length];
+
+  // Memory snippet — what user wrote 7 days ago
+  const weekAgoDate = format(subDays(new Date(), 7), 'yyyy-MM-dd');
+  const weekAgoNote = data.notes.find(n => n.date === weekAgoDate);
+
+  // 30 days ago memory
+  const monthAgoDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const monthAgoNote = data.notes.find(n => n.date === monthAgoDate);
 
   const pastNotes = data.notes
     .filter(n => n.date !== today)
     .sort((a, b) => b.date.localeCompare(a.date));
-
   const filteredNotes = moodFilter !== null ? pastNotes.filter(n => n.mood === moodFilter) : pastNotes;
   const recentNotes = showAll ? filteredNotes : filteredNotes.slice(0, 7);
 
-  // 7-day mood trend
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const date = format(subDays(new Date(), 6 - i), 'yyyy-MM-dd');
     const note = data.notes.find(n => n.date === date);
     return { date, label: format(subDays(new Date(), 6 - i), 'EEE'), mood: note?.mood };
   });
+
+  const selectedMoodObj = MOOD_OPTIONS.find(o => o.v === mood)!;
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   if (!loaded) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -103,15 +120,25 @@ export default function JournalPage() {
     </div>;
   }
 
-  const selectedMoodObj = MOOD_OPTIONS.find(o => o.v === mood)!;
-
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-2xl">
+
+      {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <BookOpen size={20} className="text-violet-500" />
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Journal</h1>
+            {journalStreak >= 2 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold"
+                style={{ background: journalStreak >= 7 ? 'linear-gradient(135deg,#f97316,#ef4444)' : '#FEF3C7', color: journalStreak >= 7 ? 'white' : '#D97706' }}
+              >
+                <Flame size={12} /> {journalStreak}d streak
+              </motion.span>
+            )}
           </div>
           {data.notes.length > 0 && (
             <button
@@ -134,25 +161,68 @@ export default function JournalPage() {
             </button>
           )}
         </div>
-        <p className="text-gray-400 text-sm">Daily mood tracking & reflections</p>
+        <p className="text-gray-400 text-sm">Reflect daily. Build self-awareness.</p>
       </div>
 
-      {/* 7-day mood trend */}
+      {/* 7-day mood strip */}
       <div className="bg-white rounded-2xl p-5 mb-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}>
-        <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">This week's mood</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">This week</p>
+          {journalStreak >= 1 && (
+            <span className="text-[11px] font-semibold text-slate-400">{data.notes.length} total entries</span>
+          )}
+        </div>
         <div className="flex items-end gap-2">
           {last7.map(day => (
             <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5">
-              {day.mood ? (
-                <MoodDot mood={day.mood} />
-              ) : (
-                <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200" />
-              )}
+              {day.mood ? <MoodDot mood={day.mood} /> : <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-200" />}
               <span className="text-[10px] text-gray-400 font-medium">{day.label}</span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Memory snippets */}
+      <AnimatePresence>
+        {(weekAgoNote?.content || monthAgoNote?.content) && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 space-y-2"
+          >
+            {weekAgoNote?.content && (
+              <div
+                className="rounded-2xl p-4 flex gap-3 items-start"
+                style={{ background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', border: '1px solid #ddd6fe' }}
+              >
+                <span className="text-xl flex-shrink-0">🧠</span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-violet-500 uppercase tracking-wide mb-1">7 days ago you wrote</p>
+                  <p className="text-[13px] text-slate-700 leading-relaxed line-clamp-2">"{weekAgoNote.content}"</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    You felt {MOOD_OPTIONS.find(m => m.v === weekAgoNote.mood)?.emoji} {MOOD_OPTIONS.find(m => m.v === weekAgoNote.mood)?.label}
+                  </p>
+                </div>
+              </div>
+            )}
+            {monthAgoNote?.content && (
+              <div
+                className="rounded-2xl p-4 flex gap-3 items-start"
+                style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0' }}
+              >
+                <span className="text-xl flex-shrink-0">📅</span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wide mb-1">30 days ago you wrote</p>
+                  <p className="text-[13px] text-slate-700 leading-relaxed line-clamp-2">"{monthAgoNote.content}"</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    You felt {MOOD_OPTIONS.find(m => m.v === monthAgoNote.mood)?.emoji} {MOOD_OPTIONS.find(m => m.v === monthAgoNote.mood)?.label}
+                  </p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Today's entry */}
       <motion.div
@@ -161,7 +231,6 @@ export default function JournalPage() {
         className="bg-white rounded-2xl overflow-hidden mb-6"
         style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1px solid #f1f5f9' }}
       >
-        {/* Top accent based on mood */}
         <div className="h-1.5 transition-colors duration-300" style={{ background: selectedMoodObj.color }} />
 
         <div className="p-5">
@@ -170,16 +239,29 @@ export default function JournalPage() {
               <h2 className="font-bold text-slate-900">Today's Entry</h2>
               <p className="text-[12px] text-slate-400">{format(new Date(), 'EEEE, MMMM d')}</p>
             </div>
-            {todayNote && (
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: '#dcfce7', color: '#16a34a' }}>
-                ✓ Saved
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {autoSaved && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background: '#dcfce7', color: '#16a34a' }}
+                >
+                  ✓ Saved
+                </motion.span>
+              )}
+              {todayNote && !autoSaved && (
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: '#f1f5f9', color: '#94a3b8' }}>
+                  Saved
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Mood picker */}
           <div className="mb-4">
-            <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Mood</p>
+            <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">How are you feeling?</p>
             <div className="flex gap-2">
               {MOOD_OPTIONS.map(m => (
                 <button
@@ -201,37 +283,69 @@ export default function JournalPage() {
             </div>
           </div>
 
-          {/* Reflection */}
+          {/* Daily prompt */}
+          <AnimatePresence>
+            {showPrompt && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-3 overflow-hidden"
+              >
+                <button
+                  onClick={() => {
+                    setContent(prev => prev ? prev : '');
+                    setShowPrompt(false);
+                  }}
+                  className="w-full text-left rounded-xl px-4 py-3 group transition-all"
+                  style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Sparkles size={12} style={{ color: '#a78bfa' }} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#a78bfa' }}>Today's prompt</span>
+                      </div>
+                      <p className="text-white text-[13px] font-medium leading-snug">{todayPrompt}</p>
+                    </div>
+                    <span className="text-[11px] text-indigo-400 flex-shrink-0 mt-0.5 group-hover:text-white transition-colors">use →</span>
+                  </div>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Reflection textarea */}
           <div className="mb-4">
-            <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Reflection</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">Reflection</p>
+              <div className="flex items-center gap-2">
+                {wordCount > 0 && (
+                  <span className="text-[11px] text-slate-300">{wordCount} words</span>
+                )}
+                {!showPrompt && (
+                  <button
+                    onClick={() => setShowPrompt(true)}
+                    className="text-[11px] font-semibold text-violet-400 hover:text-violet-600 transition-colors"
+                  >
+                    + prompt
+                  </button>
+                )}
+              </div>
+            </div>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="What's on your mind? Any wins today? What could be better?..."
-              rows={4}
+              placeholder={`${todayPrompt}\n\nOr write anything on your mind...`}
+              rows={5}
               className="w-full px-4 py-3 rounded-xl border text-[14px] text-slate-700 placeholder-slate-300 resize-none outline-none transition-all"
-              style={{ borderColor: '#e2e8f0', lineHeight: '1.6' }}
-              onFocus={e => { e.target.style.borderColor = selectedMoodObj.color; e.target.style.boxShadow = `0 0 0 3px ${selectedMoodObj.color}15`; }}
+              style={{ borderColor: '#e2e8f0', lineHeight: '1.7' }}
+              onFocus={e => { e.target.style.borderColor = selectedMoodObj.color; e.target.style.boxShadow = `0 0 0 3px ${selectedMoodObj.color}15`; setShowPrompt(false); }}
               onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
             />
           </div>
 
-          <button
-            onClick={handleSave}
-            className="w-full py-3 rounded-xl text-white font-semibold text-[14px] transition-all flex items-center justify-center gap-2"
-            style={{
-              background: saved
-                ? 'linear-gradient(135deg, #059669, #10b981)'
-                : `linear-gradient(135deg, ${selectedMoodObj.color}, ${selectedMoodObj.color}cc)`,
-              boxShadow: saved ? '0 4px 14px rgba(5,150,105,0.3)' : `0 4px 14px ${selectedMoodObj.color}30`,
-            }}
-          >
-            {saved ? (
-              <>✓ Saved!</>
-            ) : (
-              <><Save size={16} /> Save today's entry</>
-            )}
-          </button>
+          <p className="text-[11px] text-slate-300 text-center">Auto-saves as you type ✦</p>
         </div>
       </motion.div>
 
@@ -239,20 +353,14 @@ export default function JournalPage() {
       {pastNotes.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">Past Entries ({pastNotes.length})</h2>
+            <h2 className="font-semibold text-gray-900">Past Entries <span className="text-slate-400 font-normal text-sm">({pastNotes.length})</span></h2>
           </div>
-          {/* Mood filter */}
           <div className="flex gap-2 mb-3 flex-wrap">
             <button
               onClick={() => setMoodFilter(null)}
               className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-              style={{
-                background: moodFilter === null ? '#7C3AED' : '#F4F3FF',
-                color: moodFilter === null ? 'white' : '#7C3AED',
-              }}
-            >
-              All
-            </button>
+              style={{ background: moodFilter === null ? '#7C3AED' : '#F4F3FF', color: moodFilter === null ? 'white' : '#7C3AED' }}
+            >All</button>
             {MOOD_OPTIONS.map(m => (
               <button
                 key={m.v}
@@ -268,10 +376,12 @@ export default function JournalPage() {
               </button>
             ))}
           </div>
+
           <div className="space-y-3">
             <AnimatePresence>
               {recentNotes.map((note, i) => {
                 const m = MOOD_OPTIONS.find(o => o.v === note.mood)!;
+                const daysAgo = differenceInDays(new Date(), new Date(note.date + 'T12:00:00'));
                 return (
                   <motion.div
                     key={note.id}
@@ -282,10 +392,7 @@ export default function JournalPage() {
                     style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}
                   >
                     <div className="flex items-start gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ background: m.bg }}
-                      >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: m.bg }}>
                         {m.emoji}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -293,7 +400,9 @@ export default function JournalPage() {
                           <p className="text-[13px] font-semibold text-slate-700">
                             {format(new Date(note.date + 'T12:00:00'), 'EEE, MMM d')}
                           </p>
-                          <span className="text-[11px] font-semibold" style={{ color: m.color }}>{m.label}</span>
+                          <span className="text-[11px] text-slate-400">
+                            {daysAgo === 1 ? 'Yesterday' : daysAgo === 7 ? '1 week ago' : daysAgo === 30 ? '1 month ago' : `${daysAgo}d ago`}
+                          </span>
                         </div>
                         {note.content ? (
                           <p className="text-[13px] text-slate-500 leading-relaxed line-clamp-2">{note.content}</p>
@@ -327,102 +436,12 @@ export default function JournalPage() {
         <div className="text-center py-10">
           <p className="text-4xl mb-3">📖</p>
           <p className="text-slate-500 font-semibold">Your journal is empty</p>
-          <p className="text-sm text-slate-400 mt-1">Save today's entry above to get started</p>
+          <p className="text-sm text-slate-400 mt-1">Start writing above — it auto-saves as you go</p>
         </div>
       )}
 
-      {/* Naval Ravikant Wisdom */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="font-bold text-slate-900 text-lg">Naval's Wisdom</h2>
-            <p className="text-[12px] text-slate-400">Daily quote from Naval Ravikant</p>
-          </div>
-          <button
-            onClick={() => setQuoteIdx(i => (i + 1) % NAVAL_QUOTES.length)}
-            className="p-2 rounded-xl bg-violet-50 text-violet-500 hover:bg-violet-100 transition-colors"
-            title="Next quote"
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
-
-        {/* Featured quote */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={quoteIdx}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
-            className="rounded-2xl p-5 mb-4 relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
-              boxShadow: '0 8px 32px rgba(99,102,241,0.25)',
-            }}
-          >
-            {/* Decorative quote mark */}
-            <div className="absolute top-3 right-4 text-6xl font-serif text-indigo-400 opacity-20 leading-none select-none">"</div>
-
-            <span
-              className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
-              style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa' }}
-            >
-              {NAVAL_QUOTES[quoteIdx].cat}
-            </span>
-
-            <p className="text-white font-medium text-[15px] leading-relaxed mb-4 relative z-10">
-              "{NAVAL_QUOTES[quoteIdx].text}"
-            </p>
-
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">N</div>
-              <p className="text-indigo-300 text-[12px] font-semibold">Naval Ravikant</p>
-              <span className="text-indigo-500 text-[11px] ml-auto">{quoteIdx + 1} / {NAVAL_QUOTES.length}</span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Browse all quotes */}
-        <button
-          onClick={() => setShowAllQuotes(v => !v)}
-          className="w-full py-3 rounded-xl text-[13px] font-semibold text-slate-500 bg-white border border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mb-3"
-        >
-          {showAllQuotes ? 'Hide all quotes' : `Browse all ${NAVAL_QUOTES.length} quotes`}
-          <ChevronDown size={14} style={{ transform: showAllQuotes ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
-
-        <AnimatePresence>
-          {showAllQuotes && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden"
-            >
-              <div className="space-y-2 pb-4">
-                {NAVAL_QUOTES.map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { setQuoteIdx(i); setShowAllQuotes(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="w-full text-left bg-white rounded-xl p-3.5 transition-all hover:shadow-sm"
-                    style={{ border: quoteIdx === i ? '1.5px solid #818cf8' : '1px solid #f1f5f9' }}
-                  >
-                    <span
-                      className="inline-block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5"
-                      style={{ background: '#f5f3ff', color: '#7c3aed' }}
-                    >
-                      {q.cat}
-                    </span>
-                    <p className="text-[13px] text-slate-700 leading-snug line-clamp-2">"{q.text}"</p>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {/* Bottom padding for mobile nav */}
+      <div className="h-6" />
     </div>
   );
 }

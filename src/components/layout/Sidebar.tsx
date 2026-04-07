@@ -218,7 +218,7 @@ export default function Sidebar() {
               {format(new Date(), 'EEE, MMM d')}
             </p>
           </div>
-          <p className="text-[10px] font-bold" style={{ color: 'rgba(167,139,250,0.5)' }}>streak.app</p>
+          <p className="text-[10px] font-bold" style={{ color: 'rgba(167,139,250,0.5)' }}>streak.app · v30</p>
         </div>
       </div>
     </aside>
