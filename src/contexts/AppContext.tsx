@@ -80,6 +80,7 @@ interface AppContextType {
   deleteExpense: (id: string) => void;
   updateDailyBudget: (budget: number) => void;
   updateUserName: (name: string) => void;
+  importData: (incoming: Partial<AppData>) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -186,11 +187,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setData(prev => ({ ...prev, userName: name }));
   }, []);
 
+  const importData = useCallback((incoming: Partial<AppData>) => {
+    setData(prev => ({
+      ...prev,
+      ...incoming,
+      habits: (incoming.habits ?? prev.habits).map((h: Habit) => ({
+        ...h,
+        notes: h.notes ?? {},
+        archived: h.archived ?? false,
+      })),
+      notes: incoming.notes ?? prev.notes,
+      expenses: incoming.expenses ?? prev.expenses,
+    }));
+  }, []);
+
   return (
     <AppContext.Provider value={{
       data, loaded,
       toggleCompletion, addHabit, updateHabit, deleteHabit, archiveHabit,
       addNote, addExpense, deleteExpense, updateDailyBudget, updateUserName,
+      importData,
     }}>
       {children}
     </AppContext.Provider>

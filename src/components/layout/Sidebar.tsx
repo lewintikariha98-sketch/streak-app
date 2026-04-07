@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, CheckSquare, BarChart3, Trophy,
-  PawPrint, BookOpen,
+  PawPrint, BookOpen, Database,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { getTotalXP, getLevel } from '@/lib/stats';
@@ -17,6 +17,7 @@ const NAV = [
   { href: '/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/achievements', icon: Trophy, label: 'Achievements' },
   { href: '/journal', icon: BookOpen, label: 'Journal' },
+  { href: '/data', icon: Database, label: 'My Data' },
 ];
 
 // Brand logo mark — stylized lightning bolt in gradient pill
@@ -209,9 +210,14 @@ export default function Sidebar() {
         </div>
 
         <div className="mt-3 px-1 flex items-center justify-between">
-          <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
-            {format(new Date(), 'EEE, MMM d')}
-          </p>
+          <div>
+            {data.userName && data.userName !== 'You' && (
+              <p className="text-[12px] font-bold text-white leading-none">{data.userName}</p>
+            )}
+            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              {format(new Date(), 'EEE, MMM d')}
+            </p>
+          </div>
           <p className="text-[10px] font-bold" style={{ color: 'rgba(167,139,250,0.5)' }}>streak.app</p>
         </div>
       </div>

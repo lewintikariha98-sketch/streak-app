@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, subDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ChevronDown, BookOpen, RefreshCw } from 'lucide-react';
+import { Save, ChevronDown, BookOpen, RefreshCw, Download } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 
 const NAVAL_QUOTES = [
@@ -62,6 +62,7 @@ export default function JournalPage() {
   const [content, setContent] = useState(todayNote?.content ?? '');
   const [saved, setSaved] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [moodFilter, setMoodFilter] = useState<number | null>(null);
   const [quoteIdx, setQuoteIdx] = useState(() => {
     const start = new Date(new Date().getFullYear(), 0, 0);
     const diff = new Date().getTime() - start.getTime();
@@ -86,7 +87,8 @@ export default function JournalPage() {
     .filter(n => n.date !== today)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const recentNotes = showAll ? pastNotes : pastNotes.slice(0, 7);
+  const filteredNotes = moodFilter !== null ? pastNotes.filter(n => n.mood === moodFilter) : pastNotes;
+  const recentNotes = showAll ? filteredNotes : filteredNotes.slice(0, 7);
 
   // 7-day mood trend
   const last7 = Array.from({ length: 7 }, (_, i) => {
@@ -106,9 +108,31 @@ export default function JournalPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-2xl">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <BookOpen size={20} className="text-violet-500" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Journal</h1>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <BookOpen size={20} className="text-violet-500" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Journal</h1>
+          </div>
+          {data.notes.length > 0 && (
+            <button
+              onClick={() => {
+                const MOOD_LABELS: Record<number, string> = { 1: 'Rough 😞', 2: 'Meh 😕', 3: 'Okay 😐', 4: 'Good 😊', 5: 'Amazing 🤩' };
+                const sorted = [...data.notes].sort((a, b) => b.date.localeCompare(a.date));
+                const text = ['# Streak Journal', `Exported: ${format(new Date(), 'MMMM d, yyyy')}`, `${sorted.length} entries`, '', '---', '',
+                  ...sorted.flatMap(n => [`## ${format(new Date(n.date + 'T12:00:00'), 'EEEE, MMMM d, yyyy')}`, `Mood: ${MOOD_LABELS[n.mood] ?? n.mood}`, '', n.content || '_No reflection written._', '', '---', '']),
+                ].join('\n');
+                const blob = new Blob([text], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `streak-journal-${format(new Date(), 'yyyy-MM-dd')}.md`; a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all"
+              style={{ background: '#F5F3FF', color: '#7C3AED', border: '1.5px solid #DDD6FE' }}
+            >
+              <Download size={13} /> Export
+            </button>
+          )}
         </div>
         <p className="text-gray-400 text-sm">Daily mood tracking & reflections</p>
       </div>
@@ -214,7 +238,36 @@ export default function JournalPage() {
       {/* Past entries */}
       {pastNotes.length > 0 && (
         <div>
-          <h2 className="font-semibold text-gray-900 mb-3">Past Entries ({pastNotes.length})</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">Past Entries ({pastNotes.length})</h2>
+          </div>
+          {/* Mood filter */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <button
+              onClick={() => setMoodFilter(null)}
+              className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+              style={{
+                background: moodFilter === null ? '#7C3AED' : '#F4F3FF',
+                color: moodFilter === null ? 'white' : '#7C3AED',
+              }}
+            >
+              All
+            </button>
+            {MOOD_OPTIONS.map(m => (
+              <button
+                key={m.v}
+                onClick={() => setMoodFilter(moodFilter === m.v ? null : m.v)}
+                className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all flex items-center gap-1"
+                style={{
+                  background: moodFilter === m.v ? m.color : '#F8FAFC',
+                  color: moodFilter === m.v ? 'white' : '#64748B',
+                  border: `1.5px solid ${moodFilter === m.v ? m.color : 'transparent'}`,
+                }}
+              >
+                {m.emoji} {m.label}
+              </button>
+            ))}
+          </div>
           <div className="space-y-3">
             <AnimatePresence>
               {recentNotes.map((note, i) => {
@@ -255,12 +308,15 @@ export default function JournalPage() {
             </AnimatePresence>
           </div>
 
-          {pastNotes.length > 7 && (
+          {filteredNotes.length === 0 && moodFilter !== null && (
+            <p className="text-center text-slate-400 text-[13px] py-6">No entries with this mood yet</p>
+          )}
+          {filteredNotes.length > 7 && (
             <button
               onClick={() => setShowAll(!showAll)}
               className="w-full mt-3 py-3 rounded-xl text-[13px] font-semibold text-slate-500 bg-white border border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
-              {showAll ? 'Show less' : `Show ${pastNotes.length - 7} more`}
+              {showAll ? 'Show less' : `Show ${filteredNotes.length - 7} more`}
               <ChevronDown size={14} style={{ transform: showAll ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
           )}
