@@ -9,6 +9,7 @@ import LevelUpModal from '@/components/ui/LevelUpModal';
 import ToastStack from '@/components/ui/ToastStack';
 import NotificationDetector from '@/components/ui/NotificationDetector';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNotifications } from '@/contexts/NotificationContext';
 
@@ -39,6 +40,12 @@ function NotificationLayer() {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    }
+  }, [])
+
   return (
     <AppProvider>
       <NotificationProvider>
